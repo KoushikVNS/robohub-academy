@@ -144,6 +144,7 @@ export type Database = {
         Row: {
           correct_answer: number
           created_at: string
+          hint: string | null
           id: string
           options: Json
           order_index: number
@@ -153,6 +154,7 @@ export type Database = {
         Insert: {
           correct_answer: number
           created_at?: string
+          hint?: string | null
           id?: string
           options?: Json
           order_index?: number
@@ -162,6 +164,7 @@ export type Database = {
         Update: {
           correct_answer?: number
           created_at?: string
+          hint?: string | null
           id?: string
           options?: Json
           order_index?: number
@@ -183,27 +186,36 @@ export type Database = {
           created_at: string
           created_by: string
           description: string | null
+          difficulty: Database["public"]["Enums"]["quiz_difficulty"]
           id: string
           is_active: boolean
+          timer_per_question: number
           title: string
+          total_questions: number
           updated_at: string
         }
         Insert: {
           created_at?: string
           created_by: string
           description?: string | null
+          difficulty?: Database["public"]["Enums"]["quiz_difficulty"]
           id?: string
           is_active?: boolean
+          timer_per_question?: number
           title: string
+          total_questions?: number
           updated_at?: string
         }
         Update: {
           created_at?: string
           created_by?: string
           description?: string | null
+          difficulty?: Database["public"]["Enums"]["quiz_difficulty"]
           id?: string
           is_active?: boolean
+          timer_per_question?: number
           title?: string
+          total_questions?: number
           updated_at?: string
         }
         Relationships: []
@@ -277,6 +289,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "member"
+      quiz_difficulty: "easy" | "medium" | "hard"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -405,6 +418,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "member"],
+      quiz_difficulty: ["easy", "medium", "hard"],
     },
   },
 } as const
