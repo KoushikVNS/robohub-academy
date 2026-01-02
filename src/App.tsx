@@ -8,6 +8,10 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
+import LearningHub from "./pages/LearningHub";
+import CommunityChat from "./pages/CommunityChat";
+import LabAccess from "./pages/LabAccess";
+import Leaderboard from "./pages/Leaderboard";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -60,6 +64,38 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Admin />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/learn"
+        element={
+          <ProtectedRoute>
+            <LearningHub />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/chat"
+        element={
+          <ProtectedRoute>
+            <CommunityChat />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/lab"
+        element={
+          <ProtectedRoute>
+            <LabAccess />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/leaderboard"
+        element={
+          <ProtectedRoute>
+            <Leaderboard />
           </ProtectedRoute>
         }
       />
