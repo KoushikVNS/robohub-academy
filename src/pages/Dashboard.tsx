@@ -14,7 +14,8 @@ import {
   Users,
   Zap,
   ChevronRight,
-  Settings
+  Settings,
+  User
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -77,6 +78,9 @@ export default function Dashboard() {
               <p className="text-sm font-medium">{profile?.full_name}</p>
               <p className="text-xs text-muted-foreground">Batch {profile?.batch_number}</p>
             </div>
+            <Button variant="ghost" size="icon" onClick={() => navigate('/profile')}>
+              <User className="w-5 h-5" />
+            </Button>
             {isAdmin && (
               <Button variant="outline" size="sm" onClick={() => navigate('/admin')}>
                 <Settings className="w-4 h-4 mr-2" />
