@@ -110,6 +110,7 @@ export type Database = {
           enrollment_id: string
           full_name: string
           id: string
+          mobile_number: string | null
           updated_at: string
           user_id: string
           xp_points: number
@@ -122,6 +123,7 @@ export type Database = {
           enrollment_id: string
           full_name: string
           id?: string
+          mobile_number?: string | null
           updated_at?: string
           user_id: string
           xp_points?: number
@@ -134,6 +136,7 @@ export type Database = {
           enrollment_id?: string
           full_name?: string
           id?: string
+          mobile_number?: string | null
           updated_at?: string
           user_id?: string
           xp_points?: number

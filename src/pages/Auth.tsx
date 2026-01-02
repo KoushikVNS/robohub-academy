@@ -1,20 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthForm } from '@/components/auth/AuthForm';
-import { ProfileForm } from '@/components/auth/ProfileForm';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2, Bot, Cog, Cpu, Zap } from 'lucide-react';
 
 export default function Auth() {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
-  const { user, hasProfile, loading } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user && hasProfile) {
+    if (user) {
       navigate('/');
     }
-  }, [user, hasProfile, navigate]);
+  }, [user, navigate]);
 
   if (loading) {
     return (
@@ -23,8 +22,6 @@ export default function Auth() {
       </div>
     );
   }
-
-  const showProfileForm = user && !hasProfile;
 
   return (
     <div className="min-h-screen flex">
@@ -89,19 +86,11 @@ export default function Auth() {
             <span className="text-xl font-display font-bold">RoboClub</span>
           </div>
 
-          {showProfileForm ? (
-            <ProfileForm onSuccess={() => navigate('/')} />
-          ) : (
-            <AuthForm
-              mode={mode}
-              onToggleMode={() => setMode(mode === 'login' ? 'signup' : 'login')}
-              onSuccess={() => {
-                if (!hasProfile) {
-                  // Will trigger re-render and show profile form
-                }
-              }}
-            />
-          )}
+          <AuthForm
+            mode={mode}
+            onToggleMode={() => setMode(mode === 'login' ? 'signup' : 'login')}
+            onSuccess={() => navigate('/')}
+          />
         </div>
       </div>
     </div>

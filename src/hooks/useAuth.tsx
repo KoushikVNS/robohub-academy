@@ -8,8 +8,18 @@ interface Profile {
   full_name: string;
   enrollment_id: string;
   batch_number: string;
+  mobile_number: string | null;
   avatar_url: string | null;
   bio: string | null;
+}
+
+interface SignUpData {
+  full_name: string;
+  enrollment_id: string;
+  batch_number: string;
+  mobile_number: string;
+  email: string;
+  password: string;
 }
 
 interface AuthContextType {
@@ -17,11 +27,9 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
-  signInWithOtp: (email: string) => Promise<{ error: Error | null }>;
-  verifyOtpAndCreateAccount: (email: string, otp: string, password: string) => Promise<{ error: Error | null; success?: boolean }>;
+  signUp: (data: SignUpData) => Promise<{ error: Error | null }>;
   signInWithPassword: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
-  createProfile: (data: { full_name: string; enrollment_id: string; batch_number: string }) => Promise<{ error: Error | null }>;
   hasProfile: boolean;
 }
 
@@ -78,43 +86,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signInWithOtp = async (email: string) => {
+  const signUp = async (data: SignUpData) => {
     try {
-      const { data, error } = await supabase.functions.invoke('send-otp', {
-        body: { email },
+      // Create auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+        },
       });
 
-      if (error) {
-        return { error: new Error(error.message || 'Failed to send OTP') };
+      if (authError) {
+        return { error: new Error(authError.message) };
       }
 
-      if (data?.error) {
-        return { error: new Error(data.error) };
+      if (!authData.user) {
+        return { error: new Error('Failed to create account') };
+      }
+
+      // Create profile
+      const { error: profileError } = await supabase.from('profiles').insert({
+        user_id: authData.user.id,
+        full_name: data.full_name,
+        enrollment_id: data.enrollment_id,
+        batch_number: data.batch_number,
+        mobile_number: data.mobile_number,
+      });
+
+      if (profileError) {
+        return { error: new Error(profileError.message) };
       }
 
       return { error: null };
     } catch (err: any) {
-      return { error: new Error(err.message || 'Failed to send OTP') };
-    }
-  };
-
-  const verifyOtpAndCreateAccount = async (email: string, otp: string, password: string) => {
-    try {
-      const { data, error } = await supabase.functions.invoke('verify-otp', {
-        body: { email, otp, password },
-      });
-
-      if (error) {
-        return { error: new Error(error.message || 'Failed to verify OTP') };
-      }
-
-      if (data?.error) {
-        return { error: new Error(data.error) };
-      }
-
-      return { error: null, success: true };
-    } catch (err: any) {
-      return { error: new Error(err.message || 'Failed to verify OTP') };
+      return { error: new Error(err.message || 'Failed to sign up') };
     }
   };
 
@@ -142,25 +148,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
   };
 
-  const createProfile = async (data: { full_name: string; enrollment_id: string; batch_number: string }) => {
-    if (!user) {
-      return { error: new Error('No user logged in') };
-    }
-
-    const { error } = await supabase.from('profiles').insert({
-      user_id: user.id,
-      full_name: data.full_name,
-      enrollment_id: data.enrollment_id,
-      batch_number: data.batch_number,
-    });
-
-    if (!error) {
-      await fetchProfile(user.id);
-    }
-
-    return { error: error as Error | null };
-  };
-
   return (
     <AuthContext.Provider
       value={{
@@ -168,11 +155,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         profile,
         loading,
-        signInWithOtp,
-        verifyOtpAndCreateAccount,
+        signUp,
         signInWithPassword,
         signOut,
-        createProfile,
         hasProfile: !!profile,
       }}
     >
