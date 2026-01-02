@@ -1,6 +1,8 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
@@ -15,13 +17,41 @@ import {
   Zap,
   ChevronRight,
   Settings,
-  User
+  User,
+  Bell
 } from 'lucide-react';
+import { format } from 'date-fns';
+
+interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  created_at: string;
+}
 
 export default function Dashboard() {
   const { user, profile, signOut } = useAuth();
   const { isAdmin } = useAdmin();
   const navigate = useNavigate();
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      const { data, error } = await supabase
+        .from('announcements')
+        .select('id, title, content, created_at')
+        .order('created_at', { ascending: false })
+        .limit(5);
+      
+      if (!error && data) {
+        setAnnouncements(data);
+      }
+      setLoading(false);
+    };
+
+    fetchAnnouncements();
+  }, []);
 
   const quickStats = [
     { label: 'Videos Watched', value: '0', icon: Video, color: 'text-primary' },
@@ -150,19 +180,39 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Announcements Placeholder */}
+        {/* Announcements Section */}
         <Card className="border-border/50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-primary" />
+              <Bell className="w-5 h-5 text-primary" />
               Latest Announcements
             </CardTitle>
             <CardDescription>Stay updated with club news</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-muted-foreground">
-              <p>No announcements yet. Check back soon!</p>
-            </div>
+            {loading ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>Loading announcements...</p>
+              </div>
+            ) : announcements.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No announcements yet. Check back soon!</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {announcements.map((announcement) => (
+                  <div key={announcement.id} className="border-b border-border/50 pb-4 last:border-0 last:pb-0">
+                    <div className="flex items-start justify-between mb-1">
+                      <h4 className="font-semibold text-foreground">{announcement.title}</h4>
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(announcement.created_at), 'MMM d, yyyy')}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{announcement.content}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </main>
