@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Loader2, Plus, Trash2, Edit, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, Plus, Trash2, Edit, ChevronDown, ChevronUp, Clock, HelpCircle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -22,12 +22,24 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+type QuizDifficulty = 'easy' | 'medium' | 'hard';
 
 interface Quiz {
   id: string;
   title: string;
   description: string | null;
   is_active: boolean;
+  difficulty: QuizDifficulty;
+  timer_per_question: number;
+  total_questions: number;
   created_at: string;
 }
 
@@ -38,6 +50,7 @@ interface QuizQuestion {
   options: string[];
   correct_answer: number;
   order_index: number;
+  hint: string | null;
 }
 
 export function QuizzesManager() {
@@ -48,7 +61,13 @@ export function QuizzesManager() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedQuiz, setExpandedQuiz] = useState<string | null>(null);
-  const [form, setForm] = useState({ title: '', description: '' });
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    difficulty: 'medium' as QuizDifficulty,
+    timer_per_question: 120,
+    total_questions: 10,
+  });
   const [saving, setSaving] = useState(false);
 
   // Question form state
@@ -58,6 +77,7 @@ export function QuizzesManager() {
     question: '',
     options: ['', '', '', ''],
     correct_answer: 0,
+    hint: '',
   });
 
   const fetchQuizzes = async () => {
@@ -66,7 +86,7 @@ export function QuizzesManager() {
       .select('*')
       .order('created_at', { ascending: false });
     
-    if (data) setQuizzes(data);
+    if (data) setQuizzes(data as Quiz[]);
     setLoading(false);
   };
 
@@ -78,13 +98,26 @@ export function QuizzesManager() {
       .order('order_index');
     
     if (data) {
-      setQuestions(prev => ({ ...prev, [quizId]: data.map(q => ({ ...q, options: q.options as string[] })) }));
+      setQuestions(prev => ({
+        ...prev,
+        [quizId]: data.map(q => ({ ...q, options: q.options as string[] }))
+      }));
     }
   };
 
   useEffect(() => {
     fetchQuizzes();
   }, []);
+
+  const resetForm = () => {
+    setForm({
+      title: '',
+      description: '',
+      difficulty: 'medium',
+      timer_per_question: 120,
+      total_questions: 10,
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,7 +131,13 @@ export function QuizzesManager() {
     if (editingId) {
       const { error } = await supabase
         .from('quizzes')
-        .update({ title: form.title, description: form.description || null })
+        .update({
+          title: form.title,
+          description: form.description || null,
+          difficulty: form.difficulty,
+          timer_per_question: form.timer_per_question,
+          total_questions: form.total_questions,
+        })
         .eq('id', editingId);
 
       if (error) {
@@ -107,20 +146,27 @@ export function QuizzesManager() {
         toast.success('Quiz updated');
         setDialogOpen(false);
         setEditingId(null);
-        setForm({ title: '', description: '' });
+        resetForm();
         fetchQuizzes();
       }
     } else {
       const { error } = await supabase
         .from('quizzes')
-        .insert({ title: form.title, description: form.description || null, created_by: user?.id });
+        .insert({
+          title: form.title,
+          description: form.description || null,
+          difficulty: form.difficulty,
+          timer_per_question: form.timer_per_question,
+          total_questions: form.total_questions,
+          created_by: user?.id,
+        });
 
       if (error) {
         toast.error('Failed to create quiz');
       } else {
         toast.success('Quiz created');
         setDialogOpen(false);
-        setForm({ title: '', description: '' });
+        resetForm();
         fetchQuizzes();
       }
     }
@@ -140,6 +186,7 @@ export function QuizzesManager() {
       question: questionForm.question,
       options: questionForm.options,
       correct_answer: questionForm.correct_answer,
+      hint: questionForm.hint || null,
       order_index: (questions[selectedQuizId!]?.length || 0),
     });
 
@@ -148,7 +195,7 @@ export function QuizzesManager() {
     } else {
       toast.success('Question added');
       setQuestionDialogOpen(false);
-      setQuestionForm({ question: '', options: ['', '', '', ''], correct_answer: 0 });
+      setQuestionForm({ question: '', options: ['', '', '', ''], correct_answer: 0, hint: '' });
       fetchQuestions(selectedQuizId!);
     }
     setSaving(false);
@@ -156,7 +203,13 @@ export function QuizzesManager() {
 
   const handleEdit = (quiz: Quiz) => {
     setEditingId(quiz.id);
-    setForm({ title: quiz.title, description: quiz.description || '' });
+    setForm({
+      title: quiz.title,
+      description: quiz.description || '',
+      difficulty: quiz.difficulty,
+      timer_per_question: quiz.timer_per_question,
+      total_questions: quiz.total_questions,
+    });
     setDialogOpen(true);
   };
 
@@ -195,6 +248,20 @@ export function QuizzesManager() {
     }
   };
 
+  const formatTimer = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
+  };
+
+  const getDifficultyColor = (difficulty: QuizDifficulty) => {
+    switch (difficulty) {
+      case 'easy': return 'bg-green-500/10 text-green-600 border-green-500/20';
+      case 'medium': return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20';
+      case 'hard': return 'bg-red-500/10 text-red-600 border-red-500/20';
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -211,7 +278,7 @@ export function QuizzesManager() {
           setDialogOpen(open);
           if (!open) {
             setEditingId(null);
-            setForm({ title: '', description: '' });
+            resetForm();
           }
         }}>
           <DialogTrigger asChild>
@@ -220,7 +287,7 @@ export function QuizzesManager() {
               New Quiz
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>{editingId ? 'Edit Quiz' : 'New Quiz'}</DialogTitle>
             </DialogHeader>
@@ -231,7 +298,7 @@ export function QuizzesManager() {
                   id="title"
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  placeholder="Quiz title"
+                  placeholder="e.g., Resistors Fundamentals"
                 />
               </div>
               <div className="space-y-2">
@@ -240,10 +307,63 @@ export function QuizzesManager() {
                   id="description"
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  placeholder="Quiz description (optional)"
-                  rows={3}
+                  placeholder="Brief description of the quiz topic"
+                  rows={2}
                 />
               </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Difficulty Level</Label>
+                  <Select
+                    value={form.difficulty}
+                    onValueChange={(v: QuizDifficulty) => setForm({ ...form, difficulty: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="easy">Easy</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="hard">Hard</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="total_questions">Number of Questions</Label>
+                  <Input
+                    id="total_questions"
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={form.total_questions}
+                    onChange={(e) => setForm({ ...form, total_questions: parseInt(e.target.value) || 10 })}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Timer per Question</Label>
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={form.timer_per_question.toString()}
+                    onValueChange={(v) => setForm({ ...form, timer_per_question: parseInt(v) })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="30">30 seconds</SelectItem>
+                      <SelectItem value="60">1 minute</SelectItem>
+                      <SelectItem value="90">1.5 minutes</SelectItem>
+                      <SelectItem value="120">2 minutes</SelectItem>
+                      <SelectItem value="180">3 minutes</SelectItem>
+                      <SelectItem value="300">5 minutes</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                   Cancel
@@ -274,7 +394,7 @@ export function QuizzesManager() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Options</Label>
+              <Label>Options (select correct answer)</Label>
               {questionForm.options.map((option, idx) => (
                 <div key={idx} className="flex items-center gap-2">
                   <Input
@@ -291,11 +411,21 @@ export function QuizzesManager() {
                     name="correct"
                     checked={questionForm.correct_answer === idx}
                     onChange={() => setQuestionForm({ ...questionForm, correct_answer: idx })}
-                    className="w-4 h-4"
+                    className="w-4 h-4 accent-primary"
                   />
                 </div>
               ))}
-              <p className="text-xs text-muted-foreground">Select the correct answer</p>
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <HelpCircle className="w-4 h-4" />
+                Hint (optional)
+              </Label>
+              <Input
+                value={questionForm.hint}
+                onChange={(e) => setQuestionForm({ ...questionForm, hint: e.target.value })}
+                placeholder="A helpful hint for students"
+              />
             </div>
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setQuestionDialogOpen(false)}>
@@ -317,15 +447,25 @@ export function QuizzesManager() {
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <CardTitle className="text-lg">{quiz.title}</CardTitle>
                       <Badge variant={quiz.is_active ? 'default' : 'secondary'}>
                         {quiz.is_active ? 'Active' : 'Inactive'}
+                      </Badge>
+                      <Badge className={getDifficultyColor(quiz.difficulty)} variant="outline">
+                        {quiz.difficulty.charAt(0).toUpperCase() + quiz.difficulty.slice(1)}
                       </Badge>
                     </div>
                     {quiz.description && (
                       <p className="text-sm text-muted-foreground mt-1">{quiz.description}</p>
                     )}
+                    <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5" />
+                        {formatTimer(quiz.timer_per_question)}/question
+                      </span>
+                      <span>{quiz.total_questions} questions</span>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Switch checked={quiz.is_active} onCheckedChange={() => toggleActive(quiz)} />
@@ -350,7 +490,7 @@ export function QuizzesManager() {
               <CollapsibleContent>
                 <CardContent className="pt-4 border-t">
                   <div className="flex justify-between items-center mb-4">
-                    <h4 className="font-medium">Questions ({questions[quiz.id]?.length || 0})</h4>
+                    <h4 className="font-medium">Questions ({questions[quiz.id]?.length || 0} / {quiz.total_questions})</h4>
                     <Button
                       size="sm"
                       onClick={() => {
@@ -366,7 +506,7 @@ export function QuizzesManager() {
                     {questions[quiz.id]?.map((q, idx) => (
                       <div key={q.id} className="p-3 bg-muted rounded-lg">
                         <div className="flex justify-between items-start">
-                          <div>
+                          <div className="flex-1">
                             <p className="font-medium">Q{idx + 1}: {q.question}</p>
                             <ul className="mt-2 space-y-1">
                               {q.options.map((opt, optIdx) => (
@@ -375,6 +515,12 @@ export function QuizzesManager() {
                                 </li>
                               ))}
                             </ul>
+                            {q.hint && (
+                              <p className="mt-2 text-sm text-muted-foreground flex items-center gap-1">
+                                <HelpCircle className="w-3.5 h-3.5" />
+                                Hint: {q.hint}
+                              </p>
+                            )}
                           </div>
                           <Button variant="ghost" size="sm" onClick={() => deleteQuestion(q.id, quiz.id)}>
                             <Trash2 className="w-4 h-4 text-destructive" />
