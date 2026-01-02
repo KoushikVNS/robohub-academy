@@ -18,7 +18,8 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   signInWithOtp: (email: string) => Promise<{ error: Error | null }>;
-  verifyOtp: (email: string, token: string) => Promise<{ error: Error | null }>;
+  verifyOtpAndCreateAccount: (email: string, otp: string, password: string) => Promise<{ error: Error | null; success?: boolean }>;
+  signInWithPassword: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   createProfile: (data: { full_name: string; enrollment_id: string; batch_number: string }) => Promise<{ error: Error | null }>;
   hasProfile: boolean;
@@ -97,10 +98,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const verifyOtp = async (email: string, otp: string) => {
+  const verifyOtpAndCreateAccount = async (email: string, otp: string, password: string) => {
     try {
       const { data, error } = await supabase.functions.invoke('verify-otp', {
-        body: { email, otp },
+        body: { email, otp, password },
       });
 
       if (error) {
@@ -111,21 +112,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: new Error(data.error) };
       }
 
-      // Use the token to sign in
-      if (data?.token) {
-        const { error: verifyError } = await supabase.auth.verifyOtp({
-          token_hash: data.token,
-          type: 'magiclink',
-        });
+      return { error: null, success: true };
+    } catch (err: any) {
+      return { error: new Error(err.message || 'Failed to verify OTP') };
+    }
+  };
 
-        if (verifyError) {
-          return { error: new Error(verifyError.message) };
-        }
+  const signInWithPassword = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        return { error: new Error(error.message) };
       }
 
       return { error: null };
     } catch (err: any) {
-      return { error: new Error(err.message || 'Failed to verify OTP') };
+      return { error: new Error(err.message || 'Failed to sign in') };
     }
   };
 
@@ -163,7 +169,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile,
         loading,
         signInWithOtp,
-        verifyOtp,
+        verifyOtpAndCreateAccount,
+        signInWithPassword,
         signOut,
         createProfile,
         hasProfile: !!profile,

@@ -12,11 +12,18 @@ serve(async (req) => {
   }
 
   try {
-    const { email, otp } = await req.json();
+    const { email, otp, password } = await req.json();
 
     if (!email || !otp) {
       return new Response(
         JSON.stringify({ error: "Email and OTP are required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!password || password.length < 6) {
+      return new Response(
+        JSON.stringify({ error: "Password must be at least 6 characters" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -51,80 +58,52 @@ serve(async (req) => {
       .update({ verified: true })
       .eq("id", otpRecord.id);
 
-    // Check if user exists
+    // Check if user already exists
     const { data: existingUsers } = await supabase.auth.admin.listUsers();
     const existingUser = existingUsers?.users?.find(u => u.email === email);
 
-    let session = null;
-
     if (existingUser) {
-      // Generate magic link for existing user
-      const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-        type: "magiclink",
-        email,
-      });
-
-      if (linkError) {
-        console.error("Error generating link:", linkError);
-        return new Response(
-          JSON.stringify({ error: "Failed to authenticate" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      // Extract token from the link
-      const token = linkData.properties?.hashed_token;
-      
+      console.log("User already exists:", email);
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          isNewUser: false,
-          token,
-          email
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    } else {
-      // Create new user
-      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
-        email,
-        email_confirm: true,
-      });
-
-      if (createError) {
-        console.error("Error creating user:", createError);
-        return new Response(
-          JSON.stringify({ error: "Failed to create user" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      // Generate magic link for new user
-      const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-        type: "magiclink",
-        email,
-      });
-
-      if (linkError) {
-        console.error("Error generating link:", linkError);
-        return new Response(
-          JSON.stringify({ error: "Failed to authenticate" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const token = linkData.properties?.hashed_token;
-
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          isNewUser: true,
-          token,
-          email
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "An account with this email already exists. Please sign in with your password." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Create new user with password
+    const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    });
+
+    if (createError) {
+      console.error("Error creating user:", createError);
+      return new Response(
+        JSON.stringify({ error: "Failed to create user: " + createError.message }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log("User created successfully:", newUser.user?.id);
+
+    // Create member role for the new user
+    const { error: roleError } = await supabase
+      .from("user_roles")
+      .insert({ user_id: newUser.user?.id, role: 'member' });
+
+    if (roleError) {
+      console.error("Error creating user role:", roleError);
+    }
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        message: "Account created successfully. Please sign in with your password.",
+        email
+      }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (error: any) {
     console.error("Error in verify-otp function:", error);
     return new Response(
