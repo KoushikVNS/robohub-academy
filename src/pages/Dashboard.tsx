@@ -1,4 +1,6 @@
 import { useAuth } from '@/hooks/useAuth';
+import { useAdmin } from '@/hooks/useAdmin';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
@@ -11,11 +13,14 @@ import {
   BookOpen,
   Users,
   Zap,
-  ChevronRight
+  ChevronRight,
+  Settings
 } from 'lucide-react';
 
 export default function Dashboard() {
   const { user, profile, signOut } = useAuth();
+  const { isAdmin } = useAdmin();
+  const navigate = useNavigate();
 
   const quickStats = [
     { label: 'Videos Watched', value: '0', icon: Video, color: 'text-primary' },
@@ -72,6 +77,12 @@ export default function Dashboard() {
               <p className="text-sm font-medium">{profile?.full_name}</p>
               <p className="text-xs text-muted-foreground">Batch {profile?.batch_number}</p>
             </div>
+            {isAdmin && (
+              <Button variant="outline" size="sm" onClick={() => navigate('/admin')}>
+                <Settings className="w-4 h-4 mr-2" />
+                Admin
+              </Button>
+            )}
             <Button variant="ghost" size="icon" onClick={signOut}>
               <LogOut className="w-5 h-5" />
             </Button>
