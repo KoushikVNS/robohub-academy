@@ -72,31 +72,23 @@ export function StudentsManager() {
   };
 
   const toggleAdminRole = async (userId: string, currentRole: string) => {
-    if (currentRole === 'admin') {
-      // Remove admin role
-      const { error } = await supabase
-        .from('user_roles')
-        .update({ role: 'member' })
-        .eq('user_id', userId);
-      
-      if (error) {
-        toast.error('Failed to update role');
-        return;
-      }
-      toast.success('Admin role removed');
-    } else {
-      // Add admin role
-      const { error } = await supabase
-        .from('user_roles')
-        .update({ role: 'admin' })
-        .eq('user_id', userId);
-      
-      if (error) {
-        toast.error('Failed to update role');
-        return;
-      }
-      toast.success('Admin role granted');
+    const newRole = currentRole === 'admin' ? 'member' : 'admin';
+    
+    // Use upsert to handle both existing and new role entries
+    const { error } = await supabase
+      .from('user_roles')
+      .upsert(
+        { user_id: userId, role: newRole },
+        { onConflict: 'user_id' }
+      );
+    
+    if (error) {
+      console.error('Role update error:', error);
+      toast.error('Failed to update role');
+      return;
     }
+    
+    toast.success(newRole === 'admin' ? 'Admin role granted' : 'Admin role removed');
     fetchData();
   };
 
