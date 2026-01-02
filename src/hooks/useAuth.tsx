@@ -78,22 +78,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithOtp = async (email: string) => {
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: true,
+    try {
+      const { data, error } = await supabase.functions.invoke('send-otp', {
+        body: { email },
+      });
+
+      if (error) {
+        return { error: new Error(error.message || 'Failed to send OTP') };
       }
-    });
-    return { error: error as Error | null };
+
+      if (data?.error) {
+        return { error: new Error(data.error) };
+      }
+
+      return { error: null };
+    } catch (err: any) {
+      return { error: new Error(err.message || 'Failed to send OTP') };
+    }
   };
 
-  const verifyOtp = async (email: string, token: string) => {
-    const { error } = await supabase.auth.verifyOtp({
-      email,
-      token,
-      type: 'email',
-    });
-    return { error: error as Error | null };
+  const verifyOtp = async (email: string, otp: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-otp', {
+        body: { email, otp },
+      });
+
+      if (error) {
+        return { error: new Error(error.message || 'Failed to verify OTP') };
+      }
+
+      if (data?.error) {
+        return { error: new Error(data.error) };
+      }
+
+      // Use the token to sign in
+      if (data?.token) {
+        const { error: verifyError } = await supabase.auth.verifyOtp({
+          token_hash: data.token,
+          type: 'magiclink',
+        });
+
+        if (verifyError) {
+          return { error: new Error(verifyError.message) };
+        }
+      }
+
+      return { error: null };
+    } catch (err: any) {
+      return { error: new Error(err.message || 'Failed to verify OTP') };
+    }
   };
 
   const signOut = async () => {
