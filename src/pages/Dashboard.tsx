@@ -161,6 +161,7 @@ export default function Dashboard() {
             <Card 
               key={feature.title} 
               className="border-border/50 hover:border-primary/50 transition-colors cursor-pointer group"
+              onClick={() => navigate(feature.href)}
             >
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
