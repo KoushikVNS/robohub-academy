@@ -67,28 +67,50 @@ export function StudentsManager() {
   }, []);
 
   const getUserRole = (userId: string) => {
-    const userRole = roles.find(r => r.user_id === userId);
-    return userRole?.role || 'member';
+    const userRoles = roles.filter(r => r.user_id === userId);
+    // This app treats "admin" as highest privilege for display
+    return userRoles.some(r => r.role === 'admin') ? 'admin' : 'member';
   };
 
   const toggleAdminRole = async (userId: string, currentRole: string) => {
-    const newRole = currentRole === 'admin' ? 'member' : 'admin';
-    
-    // Use upsert to handle both existing and new role entries
-    const { error } = await supabase
-      .from('user_roles')
-      .upsert(
-        { user_id: userId, role: newRole },
-        { onConflict: 'user_id' }
-      );
-    
-    if (error) {
-      console.error('Role update error:', error);
-      toast.error('Failed to update role');
+    // user_roles supports multiple roles per user (unique on user_id + role)
+    if (currentRole === 'admin') {
+      const { error } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId)
+        .eq('role', 'admin');
+
+      if (error) {
+        console.error('Role update error:', error);
+        toast.error('Failed to update role');
+        return;
+      }
+
+      toast.success('Admin role removed');
+      fetchData();
       return;
     }
-    
-    toast.success(newRole === 'admin' ? 'Admin role granted' : 'Admin role removed');
+
+    const { error } = await supabase
+      .from('user_roles')
+      .insert({ user_id: userId, role: 'admin' });
+
+    // If the admin row already exists, treat as success
+    if (error) {
+      const anyErr: any = error;
+      if (anyErr?.code === '23505') {
+        toast.success('Admin role granted');
+        fetchData();
+        return;
+      }
+
+      console.error('Role update error:', error);
+      toast.error(anyErr?.message || 'Failed to update role');
+      return;
+    }
+
+    toast.success('Admin role granted');
     fetchData();
   };
 
