@@ -72,8 +72,13 @@ export type Database = {
         Row: {
           admin_notes: string | null
           created_at: string
+          group_members: string | null
           id: string
+          items_returned: boolean
+          purpose: string | null
           reason: string
+          return_date: string | null
+          returned_at: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           status: string
@@ -82,8 +87,13 @@ export type Database = {
         Insert: {
           admin_notes?: string | null
           created_at?: string
+          group_members?: string | null
           id?: string
+          items_returned?: boolean
+          purpose?: string | null
           reason: string
+          return_date?: string | null
+          returned_at?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
@@ -92,14 +102,100 @@ export type Database = {
         Update: {
           admin_notes?: string | null
           created_at?: string
+          group_members?: string | null
           id?: string
+          items_returned?: boolean
+          purpose?: string | null
           reason?: string
+          return_date?: string | null
+          returned_at?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
           user_id?: string
         }
         Relationships: []
+      }
+      lab_components: {
+        Row: {
+          available_quantity: number
+          category: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          total_quantity: number
+          updated_at: string
+        }
+        Insert: {
+          available_quantity?: number
+          category?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          total_quantity?: number
+          updated_at?: string
+        }
+        Update: {
+          available_quantity?: number
+          category?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          total_quantity?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      lab_request_items: {
+        Row: {
+          component_id: string
+          id: string
+          is_returned: boolean
+          quantity: number
+          request_id: string
+          returned_at: string | null
+          returned_quantity: number
+        }
+        Insert: {
+          component_id: string
+          id?: string
+          is_returned?: boolean
+          quantity?: number
+          request_id: string
+          returned_at?: string | null
+          returned_quantity?: number
+        }
+        Update: {
+          component_id?: string
+          id?: string
+          is_returned?: boolean
+          quantity?: number
+          request_id?: string
+          returned_at?: string | null
+          returned_quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_request_items_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "lab_components"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_request_items_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "lab_access_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
