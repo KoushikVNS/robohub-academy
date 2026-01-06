@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { QuizPlayer } from '@/components/quiz/QuizPlayer';
 import { 
   Bot, 
   ArrowLeft,
@@ -55,6 +56,7 @@ export default function LearningHub() {
   const [videos, setVideos] = useState<Video[]>([]);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeQuiz, setActiveQuiz] = useState<Quiz | null>(null);
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -88,7 +90,11 @@ export default function LearningHub() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      {activeQuiz && (
+        <QuizPlayer quiz={activeQuiz} onClose={() => setActiveQuiz(null)} />
+      )}
+      <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -216,7 +222,7 @@ export default function LearningHub() {
                           {quiz.timer_per_question}s per question
                         </div>
                       </div>
-                      <Button className="w-full">
+                      <Button className="w-full" onClick={() => setActiveQuiz(quiz)}>
                         Start Quiz
                       </Button>
                     </CardContent>
@@ -228,5 +234,6 @@ export default function LearningHub() {
         </Tabs>
       </main>
     </div>
+    </>
   );
 }
