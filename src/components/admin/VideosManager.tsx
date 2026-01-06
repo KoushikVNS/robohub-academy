@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Loader2, Plus, Trash2, Edit, Upload, Video } from 'lucide-react';
+import { Loader2, Plus, Trash2, Edit, Video, Link } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -25,6 +25,25 @@ interface VideoItem {
   created_at: string;
 }
 
+// Extract YouTube video ID from various URL formats
+const getYouTubeVideoId = (url: string): string | null => {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+    /youtube\.com\/shorts\/([^&\n?#]+)/,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1];
+  }
+  return null;
+};
+
+// Get YouTube thumbnail from video ID
+const getYouTubeThumbnail = (videoId: string): string => {
+  return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+};
+
 export function VideosManager() {
   const { user } = useAuth();
   const [videos, setVideos] = useState<VideoItem[]>([]);
@@ -33,8 +52,6 @@ export function VideosManager() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ title: '', description: '', video_url: '' });
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchVideos = async () => {
     const { data } = await supabase
@@ -50,51 +67,21 @@ export function VideosManager() {
     fetchVideos();
   }, []);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('video/')) {
-      toast.error('Please select a video file');
-      return;
-    }
-
-    if (file.size > 100 * 1024 * 1024) { // 100MB limit
-      toast.error('Video file must be less than 100MB');
-      return;
-    }
-
-    setUploading(true);
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}.${fileExt}`;
-
-    const { data, error } = await supabase.storage
-      .from('videos')
-      .upload(fileName, file);
-
-    if (error) {
-      toast.error('Failed to upload video');
-      setUploading(false);
-      return;
-    }
-
-    const { data: urlData } = supabase.storage
-      .from('videos')
-      .getPublicUrl(fileName);
-
-    setForm({ ...form, video_url: urlData.publicUrl });
-    toast.success('Video uploaded');
-    setUploading(false);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.title.trim() || !form.video_url.trim()) {
-      toast.error('Please fill in title and upload a video');
+      toast.error('Please fill in title and video URL');
+      return;
+    }
+
+    const videoId = getYouTubeVideoId(form.video_url);
+    if (!videoId) {
+      toast.error('Please enter a valid YouTube URL');
       return;
     }
 
     setSaving(true);
+    const thumbnailUrl = getYouTubeThumbnail(videoId);
 
     if (editingId) {
       const { error } = await supabase
@@ -103,6 +90,7 @@ export function VideosManager() {
           title: form.title, 
           description: form.description || null,
           video_url: form.video_url,
+          thumbnail_url: thumbnailUrl,
         })
         .eq('id', editingId);
 
@@ -122,6 +110,7 @@ export function VideosManager() {
           title: form.title, 
           description: form.description || null,
           video_url: form.video_url,
+          thumbnail_url: thumbnailUrl,
           created_by: user?.id,
         });
 
@@ -148,12 +137,6 @@ export function VideosManager() {
   };
 
   const handleDelete = async (video: VideoItem) => {
-    // Extract filename from URL to delete from storage
-    const fileName = video.video_url.split('/').pop();
-    if (fileName) {
-      await supabase.storage.from('videos').remove([fileName]);
-    }
-
     const { error } = await supabase.from('videos').delete().eq('id', video.id);
     if (error) {
       toast.error('Failed to delete video');
@@ -162,6 +145,8 @@ export function VideosManager() {
       fetchVideos();
     }
   };
+
+  const videoId = getYouTubeVideoId(form.video_url);
 
   if (loading) {
     return (
@@ -185,12 +170,12 @@ export function VideosManager() {
           <DialogTrigger asChild>
             <Button>
               <Plus className="w-4 h-4 mr-2" />
-              Upload Video
+              Add Video
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>{editingId ? 'Edit Video' : 'Upload Video'}</DialogTitle>
+              <DialogTitle>{editingId ? 'Edit Video' : 'Add Video'}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
@@ -213,58 +198,36 @@ export function VideosManager() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Video File</Label>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="video/*"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-                {form.video_url ? (
-                  <div className="space-y-2">
-                    <video
-                      src={form.video_url}
-                      controls
-                      className="w-full rounded-lg max-h-48"
+                <Label htmlFor="video_url">YouTube URL</Label>
+                <div className="relative">
+                  <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="video_url"
+                    value={form.video_url}
+                    onChange={(e) => setForm({ ...form, video_url: e.target.value })}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    className="pl-10"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Paste a YouTube video link (regular, shorts, or embed URL)
+                </p>
+                {videoId && (
+                  <div className="mt-3 rounded-lg overflow-hidden border border-border">
+                    <iframe
+                      src={`https://www.youtube.com/embed/${videoId}`}
+                      className="w-full aspect-video"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
                     />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploading}
-                    >
-                      {uploading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                      Replace Video
-                    </Button>
                   </div>
-                ) : (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                    className="w-full h-24 border-dashed"
-                  >
-                    {uploading ? (
-                      <>
-                        <Loader2 className="w-6 h-6 mr-2 animate-spin" />
-                        Uploading...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="w-6 h-6 mr-2" />
-                        Click to upload video
-                      </>
-                    )}
-                  </Button>
                 )}
               </div>
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={saving || uploading}>
+                <Button type="submit" disabled={saving || !videoId}>
                   {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   {editingId ? 'Update' : 'Add Video'}
                 </Button>
@@ -275,42 +238,52 @@ export function VideosManager() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {videos.map((video) => (
-          <Card key={video.id}>
-            <CardHeader className="p-0">
-              <video
-                src={video.video_url}
-                controls
-                className="w-full aspect-video rounded-t-lg"
-              />
-            </CardHeader>
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
-                  <CardTitle className="text-base truncate">{video.title}</CardTitle>
-                  {video.description && (
-                    <p className="text-sm text-muted-foreground truncate">{video.description}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {new Date(video.created_at).toLocaleDateString()}
-                  </p>
+        {videos.map((video) => {
+          const vId = getYouTubeVideoId(video.video_url);
+          return (
+            <Card key={video.id}>
+              <CardHeader className="p-0">
+                {vId ? (
+                  <iframe
+                    src={`https://www.youtube.com/embed/${vId}`}
+                    className="w-full aspect-video rounded-t-lg"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                ) : (
+                  <div className="w-full aspect-video bg-muted flex items-center justify-center rounded-t-lg">
+                    <Video className="w-12 h-12 text-muted-foreground/50" />
+                  </div>
+                )}
+              </CardHeader>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-base truncate">{video.title}</CardTitle>
+                    {video.description && (
+                      <p className="text-sm text-muted-foreground truncate">{video.description}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {new Date(video.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex gap-1 ml-2">
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(video)}>
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(video)}>
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex gap-1 ml-2">
-                  <Button variant="ghost" size="sm" onClick={() => handleEdit(video)}>
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => handleDelete(video)}>
-                    <Trash2 className="w-4 h-4 text-destructive" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          );
+        })}
         {videos.length === 0 && (
           <div className="col-span-full text-center text-muted-foreground py-8">
             <Video className="w-12 h-12 mx-auto mb-2 opacity-50" />
-            <p>No videos uploaded yet</p>
+            <p>No videos added yet</p>
           </div>
         )}
       </div>

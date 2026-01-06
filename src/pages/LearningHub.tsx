@@ -11,9 +11,7 @@ import {
   ArrowLeft,
   Video as VideoIcon,
   BookOpen,
-  Play,
-  Clock,
-  ExternalLink
+  Clock
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -36,6 +34,20 @@ interface Quiz {
   is_active: boolean;
   created_at: string;
 }
+
+// Extract YouTube video ID from various URL formats
+const getYouTubeVideoId = (url: string): string | null => {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+    /youtube\.com\/shorts\/([^&\n?#]+)/,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1];
+  }
+  return null;
+};
 
 export default function LearningHub() {
   const { profile } = useAuth();
@@ -126,56 +138,38 @@ export default function LearningHub() {
               </Card>
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {videos.map((video) => (
-                  <Card key={video.id} className="border-border/50 overflow-hidden hover:border-primary/50 transition-colors">
-                    <div className="aspect-video bg-muted relative group">
-                      {video.thumbnail_url ? (
-                        <img 
-                          src={video.thumbnail_url} 
-                          alt={video.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <VideoIcon className="w-12 h-12 text-muted-foreground/50" />
-                        </div>
-                      )}
-                      <a 
-                        href={video.video_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center">
-                          <Play className="w-6 h-6 text-primary-foreground ml-1" />
-                        </div>
-                      </a>
-                    </div>
-                    <CardContent className="p-4">
-                      <h3 className="font-semibold mb-1 line-clamp-1">{video.title}</h3>
-                      {video.description && (
-                        <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-                          {video.description}
-                        </p>
-                      )}
-                      <div className="flex items-center justify-between">
+                {videos.map((video) => {
+                  const videoId = getYouTubeVideoId(video.video_url);
+                  return (
+                    <Card key={video.id} className="border-border/50 overflow-hidden hover:border-primary/50 transition-colors">
+                      <div className="aspect-video bg-muted">
+                        {videoId ? (
+                          <iframe
+                            src={`https://www.youtube.com/embed/${videoId}`}
+                            className="w-full h-full"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <VideoIcon className="w-12 h-12 text-muted-foreground/50" />
+                          </div>
+                        )}
+                      </div>
+                      <CardContent className="p-4">
+                        <h3 className="font-semibold mb-1 line-clamp-1">{video.title}</h3>
+                        {video.description && (
+                          <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                            {video.description}
+                          </p>
+                        )}
                         <span className="text-xs text-muted-foreground">
                           {format(new Date(video.created_at), 'MMM d, yyyy')}
                         </span>
-                        <a 
-                          href={video.video_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <Button variant="ghost" size="sm">
-                            <ExternalLink className="w-4 h-4 mr-1" />
-                            Watch
-                          </Button>
-                        </a>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </TabsContent>
