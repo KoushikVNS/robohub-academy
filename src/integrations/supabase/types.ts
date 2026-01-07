@@ -197,6 +197,39 @@ export type Database = {
           },
         ]
       }
+      monthly_leaderboard_snapshots: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+          month: number
+          rank: number
+          user_id: string
+          xp_points: number
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          full_name: string
+          id?: string
+          month: number
+          rank: number
+          user_id: string
+          xp_points: number
+          year: number
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          month?: number
+          rank?: number
+          user_id?: string
+          xp_points?: number
+          year?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -333,6 +366,7 @@ export type Database = {
           title: string
           total_questions: number
           updated_at: string
+          xp_reward: number
         }
         Insert: {
           created_at?: string
@@ -345,6 +379,7 @@ export type Database = {
           title: string
           total_questions?: number
           updated_at?: string
+          xp_reward?: number
         }
         Update: {
           created_at?: string
@@ -357,6 +392,7 @@ export type Database = {
           title?: string
           total_questions?: number
           updated_at?: string
+          xp_reward?: number
         }
         Relationships: []
       }
@@ -381,6 +417,35 @@ export type Database = {
         }
         Relationships: []
       }
+      video_watch_history: {
+        Row: {
+          id: string
+          user_id: string
+          video_id: string
+          watched_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          video_id: string
+          watched_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          video_id?: string
+          watched_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_watch_history_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       videos: {
         Row: {
           created_at: string
@@ -391,6 +456,7 @@ export type Database = {
           title: string
           updated_at: string
           video_url: string
+          xp_reward: number
         }
         Insert: {
           created_at?: string
@@ -401,6 +467,7 @@ export type Database = {
           title: string
           updated_at?: string
           video_url: string
+          xp_reward?: number
         }
         Update: {
           created_at?: string
@@ -411,6 +478,40 @@ export type Database = {
           title?: string
           updated_at?: string
           video_url?: string
+          xp_reward?: number
+        }
+        Relationships: []
+      }
+      xp_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          reason: string | null
+          reference_id: string | null
+          transaction_type: Database["public"]["Enums"]["xp_transaction_type"]
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          reason?: string | null
+          reference_id?: string | null
+          transaction_type: Database["public"]["Enums"]["xp_transaction_type"]
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          reason?: string | null
+          reference_id?: string | null
+          transaction_type?: Database["public"]["Enums"]["xp_transaction_type"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -430,6 +531,12 @@ export type Database = {
     Enums: {
       app_role: "admin" | "member"
       quiz_difficulty: "easy" | "medium" | "hard"
+      xp_transaction_type:
+        | "quiz_completion"
+        | "video_watched"
+        | "admin_adjustment"
+        | "admin_revert"
+        | "monthly_reset"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -559,6 +666,13 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "member"],
       quiz_difficulty: ["easy", "medium", "hard"],
+      xp_transaction_type: [
+        "quiz_completion",
+        "video_watched",
+        "admin_adjustment",
+        "admin_revert",
+        "monthly_reset",
+      ],
     },
   },
 } as const

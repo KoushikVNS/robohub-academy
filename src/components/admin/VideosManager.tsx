@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Loader2, Plus, Trash2, Edit, Video, Link } from 'lucide-react';
+import { Loader2, Plus, Trash2, Edit, Video, Link, Zap } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -22,6 +23,7 @@ interface VideoItem {
   description: string | null;
   video_url: string;
   thumbnail_url: string | null;
+  xp_reward: number;
   created_at: string;
 }
 
@@ -50,7 +52,7 @@ export function VideosManager() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ title: '', description: '', video_url: '' });
+  const [form, setForm] = useState({ title: '', description: '', video_url: '', xp_reward: 5 });
   const [saving, setSaving] = useState(false);
 
   const fetchVideos = async () => {
@@ -91,6 +93,7 @@ export function VideosManager() {
           description: form.description || null,
           video_url: form.video_url,
           thumbnail_url: thumbnailUrl,
+          xp_reward: form.xp_reward,
         })
         .eq('id', editingId);
 
@@ -100,7 +103,7 @@ export function VideosManager() {
         toast.success('Video updated');
         setDialogOpen(false);
         setEditingId(null);
-        setForm({ title: '', description: '', video_url: '' });
+        setForm({ title: '', description: '', video_url: '', xp_reward: 5 });
         fetchVideos();
       }
     } else {
@@ -111,6 +114,7 @@ export function VideosManager() {
           description: form.description || null,
           video_url: form.video_url,
           thumbnail_url: thumbnailUrl,
+          xp_reward: form.xp_reward,
           created_by: user?.id,
         });
 
@@ -119,7 +123,7 @@ export function VideosManager() {
       } else {
         toast.success('Video added');
         setDialogOpen(false);
-        setForm({ title: '', description: '', video_url: '' });
+        setForm({ title: '', description: '', video_url: '', xp_reward: 5 });
         fetchVideos();
       }
     }
@@ -132,6 +136,7 @@ export function VideosManager() {
       title: video.title, 
       description: video.description || '',
       video_url: video.video_url,
+      xp_reward: video.xp_reward,
     });
     setDialogOpen(true);
   };
@@ -164,7 +169,7 @@ export function VideosManager() {
           setDialogOpen(open);
           if (!open) {
             setEditingId(null);
-            setForm({ title: '', description: '', video_url: '' });
+            setForm({ title: '', description: '', video_url: '', xp_reward: 5 });
           }
         }}>
           <DialogTrigger asChild>
@@ -223,6 +228,23 @@ export function VideosManager() {
                   </div>
                 )}
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="xp_reward" className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-yellow-500" />
+                  XP Reward
+                </Label>
+                <Input
+                  id="xp_reward"
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={form.xp_reward}
+                  onChange={(e) => setForm({ ...form, xp_reward: parseInt(e.target.value) || 0 })}
+                />
+                <p className="text-xs text-muted-foreground">
+                  XP earned when student marks video as watched
+                </p>
+              </div>
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                   Cancel
@@ -259,7 +281,13 @@ export function VideosManager() {
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
-                    <CardTitle className="text-base truncate">{video.title}</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-base truncate">{video.title}</CardTitle>
+                      <Badge variant="outline" className="flex items-center gap-1 bg-yellow-500/10 text-yellow-600 border-yellow-500/20 shrink-0">
+                        <Zap className="w-3 h-3" />
+                        +{video.xp_reward}
+                      </Badge>
+                    </div>
                     {video.description && (
                       <p className="text-sm text-muted-foreground truncate">{video.description}</p>
                     )}

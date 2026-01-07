@@ -7,12 +7,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { QuizPlayer } from '@/components/quiz/QuizPlayer';
+import { toast } from 'sonner';
 import { 
   Bot, 
   ArrowLeft,
   Video as VideoIcon,
   BookOpen,
-  Clock
+  Clock,
+  Zap,
+  CheckCircle2
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -22,6 +25,7 @@ interface Video {
   description: string | null;
   video_url: string;
   thumbnail_url: string | null;
+  xp_reward: number;
   created_at: string;
 }
 
@@ -32,6 +36,7 @@ interface Quiz {
   difficulty: 'easy' | 'medium' | 'hard';
   total_questions: number;
   timer_per_question: number;
+  xp_reward: number;
   is_active: boolean;
   created_at: string;
 }
@@ -51,12 +56,15 @@ const getYouTubeVideoId = (url: string): string | null => {
 };
 
 export default function LearningHub() {
-  const { profile } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [videos, setVideos] = useState<Video[]>([]);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeQuiz, setActiveQuiz] = useState<Quiz | null>(null);
+  const [watchedVideos, setWatchedVideos] = useState<Set<string>>(new Set());
+  const [completedQuizzes, setCompletedQuizzes] = useState<Set<string>>(new Set());
+  const [markingWatched, setMarkingWatched] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -74,11 +82,92 @@ export default function LearningHub() {
 
       if (videosRes.data) setVideos(videosRes.data);
       if (quizzesRes.data) setQuizzes(quizzesRes.data);
+
+      // Fetch user's watched videos and completed quizzes
+      if (user) {
+        const [watchedRes, attemptsRes] = await Promise.all([
+          supabase
+            .from('video_watch_history')
+            .select('video_id')
+            .eq('user_id', user.id),
+          supabase
+            .from('quiz_attempts')
+            .select('quiz_id')
+            .eq('user_id', user.id)
+        ]);
+
+        if (watchedRes.data) {
+          setWatchedVideos(new Set(watchedRes.data.map(w => w.video_id)));
+        }
+        if (attemptsRes.data) {
+          setCompletedQuizzes(new Set(attemptsRes.data.map(a => a.quiz_id)));
+        }
+      }
+
       setLoading(false);
     };
 
     fetchContent();
-  }, []);
+  }, [user]);
+
+  const handleMarkWatched = async (video: Video) => {
+    if (!user || watchedVideos.has(video.id)) return;
+
+    setMarkingWatched(video.id);
+
+    try {
+      // Insert into watch history
+      const { error: watchError } = await supabase
+        .from('video_watch_history')
+        .insert({
+          user_id: user.id,
+          video_id: video.id,
+        });
+
+      if (watchError) {
+        if (watchError.code === '23505') {
+          // Already watched
+          setWatchedVideos(prev => new Set([...prev, video.id]));
+          toast.info('Video already marked as watched');
+        } else {
+          throw watchError;
+        }
+      } else {
+        // Create XP transaction
+        await supabase
+          .from('xp_transactions')
+          .insert({
+            user_id: user.id,
+            amount: video.xp_reward,
+            transaction_type: 'video_watched',
+            reference_id: video.id,
+            reason: `Watched video: ${video.title}`,
+          });
+
+        // Update profile XP
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('xp_points')
+          .eq('user_id', user.id)
+          .single();
+
+        if (profile) {
+          await supabase
+            .from('profiles')
+            .update({ xp_points: profile.xp_points + video.xp_reward })
+            .eq('user_id', user.id);
+        }
+
+        setWatchedVideos(prev => new Set([...prev, video.id]));
+        toast.success(`+${video.xp_reward} XP earned!`);
+      }
+    } catch (error) {
+      console.error('Error marking video as watched:', error);
+      toast.error('Failed to mark video as watched');
+    }
+
+    setMarkingWatched(null);
+  };
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -146,9 +235,10 @@ export default function LearningHub() {
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {videos.map((video) => {
                   const videoId = getYouTubeVideoId(video.video_url);
+                  const isWatched = watchedVideos.has(video.id);
                   return (
-                    <Card key={video.id} className="border-border/50 overflow-hidden hover:border-primary/50 transition-colors">
-                      <div className="aspect-video bg-muted">
+                    <Card key={video.id} className={`border-border/50 overflow-hidden hover:border-primary/50 transition-colors ${isWatched ? 'border-green-500/30' : ''}`}>
+                      <div className="aspect-video bg-muted relative">
                         {videoId ? (
                           <iframe
                             src={`https://www.youtube.com/embed/${videoId}`}
@@ -161,17 +251,51 @@ export default function LearningHub() {
                             <VideoIcon className="w-12 h-12 text-muted-foreground/50" />
                           </div>
                         )}
+                        {isWatched && (
+                          <div className="absolute top-2 right-2">
+                            <Badge className="bg-green-500 text-white">
+                              <CheckCircle2 className="w-3 h-3 mr-1" />
+                              Watched
+                            </Badge>
+                          </div>
+                        )}
                       </div>
                       <CardContent className="p-4">
-                        <h3 className="font-semibold mb-1 line-clamp-1">{video.title}</h3>
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-semibold line-clamp-1 flex-1">{video.title}</h3>
+                          <Badge variant="outline" className="flex items-center gap-1 bg-yellow-500/10 text-yellow-600 border-yellow-500/20 shrink-0">
+                            <Zap className="w-3 h-3" />
+                            +{video.xp_reward}
+                          </Badge>
+                        </div>
                         {video.description && (
                           <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
                             {video.description}
                           </p>
                         )}
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(video.created_at), 'MMM d, yyyy')}
-                        </span>
+                        <div className="flex items-center justify-between mt-3">
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(video.created_at), 'MMM d, yyyy')}
+                          </span>
+                          {!isWatched ? (
+                            <Button 
+                              size="sm" 
+                              onClick={() => handleMarkWatched(video)}
+                              disabled={markingWatched === video.id}
+                            >
+                              {markingWatched === video.id ? (
+                                'Saving...'
+                              ) : (
+                                <>
+                                  <CheckCircle2 className="w-4 h-4 mr-1" />
+                                  Mark Watched
+                                </>
+                              )}
+                            </Button>
+                          ) : (
+                            <span className="text-xs text-green-600 font-medium">✓ XP Earned</span>
+                          )}
+                        </div>
                       </CardContent>
                     </Card>
                   );
@@ -194,40 +318,62 @@ export default function LearningHub() {
               </Card>
             ) : (
               <div className="grid md:grid-cols-2 gap-6">
-                {quizzes.map((quiz) => (
-                  <Card key={quiz.id} className="border-border/50 hover:border-primary/50 transition-colors">
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <CardTitle className="text-lg">{quiz.title}</CardTitle>
-                          {quiz.description && (
-                            <CardDescription className="mt-1">
-                              {quiz.description}
-                            </CardDescription>
-                          )}
+                {quizzes.map((quiz) => {
+                  const isCompleted = completedQuizzes.has(quiz.id);
+                  return (
+                    <Card key={quiz.id} className={`border-border/50 hover:border-primary/50 transition-colors ${isCompleted ? 'border-green-500/30' : ''}`}>
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <CardTitle className="text-lg">{quiz.title}</CardTitle>
+                              {isCompleted && (
+                                <Badge className="bg-green-500 text-white">
+                                  <CheckCircle2 className="w-3 h-3 mr-1" />
+                                  Completed
+                                </Badge>
+                              )}
+                            </div>
+                            {quiz.description && (
+                              <CardDescription className="mt-1">
+                                {quiz.description}
+                              </CardDescription>
+                            )}
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <Badge className={getDifficultyColor(quiz.difficulty)}>
+                              {quiz.difficulty}
+                            </Badge>
+                            <Badge variant="outline" className="flex items-center gap-1 bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
+                              <Zap className="w-3 h-3" />
+                              +{quiz.xp_reward}
+                            </Badge>
+                          </div>
                         </div>
-                        <Badge className={getDifficultyColor(quiz.difficulty)}>
-                          {quiz.difficulty}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-                        <div className="flex items-center gap-1">
-                          <BookOpen className="w-4 h-4" />
-                          {quiz.total_questions} questions
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
+                          <div className="flex items-center gap-1">
+                            <BookOpen className="w-4 h-4" />
+                            {quiz.total_questions} questions
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-4 h-4" />
+                            {quiz.timer_per_question}s per question
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          {quiz.timer_per_question}s per question
-                        </div>
-                      </div>
-                      <Button className="w-full" onClick={() => setActiveQuiz(quiz)}>
-                        Start Quiz
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
+                        <Button className="w-full" onClick={() => setActiveQuiz(quiz)}>
+                          {isCompleted ? 'Retake Quiz' : 'Start Quiz'}
+                        </Button>
+                        {isCompleted && (
+                          <p className="text-xs text-center text-muted-foreground mt-2">
+                            XP only awarded on first attempt
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </TabsContent>
