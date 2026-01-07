@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { email, otp, password } = await req.json();
+    const { email, otp, password, full_name, enrollment_id, batch_number, mobile_number } = await req.json();
 
     if (!email || !otp) {
       return new Response(
@@ -87,13 +87,24 @@ serve(async (req) => {
 
     console.log("User created successfully:", newUser.user?.id);
 
-    // Create member role for the new user
-    const { error: roleError } = await supabase
-      .from("user_roles")
-      .insert({ user_id: newUser.user?.id, role: 'member' });
+    // Create profile for the new user
+    if (newUser.user && full_name && enrollment_id && batch_number) {
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .insert({
+          user_id: newUser.user.id,
+          full_name,
+          enrollment_id,
+          batch_number,
+          mobile_number: mobile_number || null,
+        });
 
-    if (roleError) {
-      console.error("Error creating user role:", roleError);
+      if (profileError) {
+        console.error("Error creating profile:", profileError);
+        // Don't fail the whole signup if profile creation fails
+      } else {
+        console.log("Profile created for user:", newUser.user.id);
+      }
     }
 
     return new Response(
