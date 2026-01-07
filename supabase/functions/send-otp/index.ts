@@ -75,7 +75,7 @@ serve(async (req) => {
         "X-Postmark-Server-Token": postmarkToken,
       },
       body: JSON.stringify({
-        From: "noreply@yourdomain.com", // Replace with your verified sender signature email
+        From: "kaushik.chakraborty.sot2428@pwioi.com",
         To: email,
         Subject: "Your Login OTP Code",
         HtmlBody: `
