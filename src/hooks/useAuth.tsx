@@ -13,13 +13,12 @@ interface Profile {
   bio: string | null;
 }
 
-interface VerifyOtpData {
+interface SignUpData {
   full_name: string;
   enrollment_id: string;
   batch_number: string;
   mobile_number: string;
   email: string;
-  otp: string;
   password: string;
 }
 
@@ -28,8 +27,7 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
-  sendOtp: (email: string) => Promise<{ error: Error | null }>;
-  verifyOtpAndSignUp: (data: VerifyOtpData) => Promise<{ error: Error | null }>;
+  signUp: (data: SignUpData) => Promise<{ error: Error | null }>;
   signInWithPassword: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   hasProfile: boolean;
@@ -88,37 +86,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const sendOtp = async (email: string) => {
+  const signUp = async (data: SignUpData) => {
     try {
-      const { data, error } = await supabase.functions.invoke('send-otp', {
-        body: { email },
-      });
-
-      if (error) {
-        return { error: new Error(error.message) };
-      }
-
-      if (data?.error) {
-        return { error: new Error(data.error) };
-      }
-
-      return { error: null };
-    } catch (err: any) {
-      return { error: new Error(err.message || 'Failed to send OTP') };
-    }
-  };
-
-  const verifyOtpAndSignUp = async (data: VerifyOtpData) => {
-    try {
-      const { data: result, error } = await supabase.functions.invoke('verify-otp', {
-        body: {
-          email: data.email,
-          otp: data.otp,
-          password: data.password,
-          full_name: data.full_name,
-          enrollment_id: data.enrollment_id,
-          batch_number: data.batch_number,
-          mobile_number: data.mobile_number,
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { data: authData, error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: data.full_name,
+            enrollment_id: data.enrollment_id,
+            batch_number: data.batch_number,
+            mobile_number: data.mobile_number,
+          },
         },
       });
 
@@ -126,13 +108,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: new Error(error.message) };
       }
 
-      if (result?.error) {
-        return { error: new Error(result.error) };
+      // Create profile immediately if user was created
+      if (authData.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            user_id: authData.user.id,
+            full_name: data.full_name,
+            enrollment_id: data.enrollment_id,
+            batch_number: data.batch_number,
+            mobile_number: data.mobile_number || null,
+          });
+
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+        }
       }
 
       return { error: null };
     } catch (err: any) {
-      return { error: new Error(err.message || 'Failed to verify OTP') };
+      return { error: new Error(err.message || 'Failed to sign up') };
     }
   };
 
@@ -167,8 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         profile,
         loading,
-        sendOtp,
-        verifyOtpAndSignUp,
+        signUp,
         signInWithPassword,
         signOut,
         hasProfile: !!profile,
