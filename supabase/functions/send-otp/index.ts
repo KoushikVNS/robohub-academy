@@ -1,8 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { Resend } from "https://esm.sh/resend@2.0.0";
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -59,25 +56,54 @@ serve(async (req) => {
       );
     }
 
-    // Send OTP via email
-    const emailResponse = await resend.emails.send({
-      from: "RoboClub <onboarding@resend.dev>",
-      to: [email],
-      subject: "Your Login OTP Code",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h1 style="color: #333; text-align: center;">Your OTP Code</h1>
-          <p style="color: #666; text-align: center;">Use the following code to verify your email:</p>
-          <div style="background: #f5f5f5; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
-            <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #333;">${otpCode}</span>
+    // Send OTP via Postmark
+    const postmarkToken = Deno.env.get("POSTMARK_API_TOKEN");
+    
+    if (!postmarkToken) {
+      console.error("POSTMARK_API_TOKEN not configured");
+      return new Response(
+        JSON.stringify({ error: "Email service not configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const emailResponse = await fetch("https://api.postmarkapp.com/email", {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "X-Postmark-Server-Token": postmarkToken,
+      },
+      body: JSON.stringify({
+        From: "noreply@yourdomain.com", // Replace with your verified sender signature email
+        To: email,
+        Subject: "Your Login OTP Code",
+        HtmlBody: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #333; text-align: center;">Your OTP Code</h1>
+            <p style="color: #666; text-align: center;">Use the following code to verify your email:</p>
+            <div style="background: #f5f5f5; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
+              <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #333;">${otpCode}</span>
+            </div>
+            <p style="color: #999; text-align: center; font-size: 14px;">This code will expire in 10 minutes.</p>
+            <p style="color: #999; text-align: center; font-size: 14px;">If you didn't request this code, please ignore this email.</p>
           </div>
-          <p style="color: #999; text-align: center; font-size: 14px;">This code will expire in 10 minutes.</p>
-          <p style="color: #999; text-align: center; font-size: 14px;">If you didn't request this code, please ignore this email.</p>
-        </div>
-      `,
+        `,
+        TextBody: `Your OTP code is: ${otpCode}. This code will expire in 10 minutes.`,
+        MessageStream: "outbound",
+      }),
     });
 
-    console.log("Email sent successfully:", emailResponse);
+    const emailResult = await emailResponse.json();
+    console.log("Postmark response:", emailResult);
+
+    if (!emailResponse.ok) {
+      console.error("Postmark error:", emailResult);
+      return new Response(
+        JSON.stringify({ error: emailResult.Message || "Failed to send email" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     return new Response(
       JSON.stringify({ success: true, message: "OTP sent successfully" }),
