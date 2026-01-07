@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Loader2, Plus, Trash2, Edit, ChevronDown, ChevronUp, Clock, HelpCircle } from 'lucide-react';
+import { Loader2, Plus, Trash2, Edit, ChevronDown, ChevronUp, Clock, HelpCircle, Zap } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -41,6 +41,7 @@ interface Quiz {
   difficulty: QuizDifficulty;
   timer_per_question: number;
   total_questions: number;
+  xp_reward: number;
   created_at: string;
 }
 
@@ -76,6 +77,7 @@ export function QuizzesManager() {
     difficulty: 'medium' as QuizDifficulty,
     timer_per_question: 120,
     total_questions: 5,
+    xp_reward: 15,
   });
   const [questionsForm, setQuestionsForm] = useState<QuestionFormData[]>([]);
   const [saving, setSaving] = useState(false);
@@ -116,9 +118,19 @@ export function QuizzesManager() {
       difficulty: 'medium',
       timer_per_question: 120,
       total_questions: 5,
+      xp_reward: 15,
     });
     setQuestionsForm([]);
     setStep('details');
+  };
+
+  const getDefaultXP = (difficulty: QuizDifficulty) => {
+    switch (difficulty) {
+      case 'easy': return 10;
+      case 'medium': return 15;
+      case 'hard': return 20;
+      default: return 15;
+    }
   };
 
   const initializeQuestionForms = () => {
@@ -177,6 +189,7 @@ export function QuizzesManager() {
             difficulty: form.difficulty,
             timer_per_question: form.timer_per_question,
             total_questions: form.total_questions,
+            xp_reward: form.xp_reward,
           })
           .eq('id', editingId);
 
@@ -209,6 +222,7 @@ export function QuizzesManager() {
             difficulty: form.difficulty,
             timer_per_question: form.timer_per_question,
             total_questions: form.total_questions,
+            xp_reward: form.xp_reward,
             created_by: user?.id,
           })
           .select()
@@ -251,6 +265,7 @@ export function QuizzesManager() {
       difficulty: quiz.difficulty,
       timer_per_question: quiz.timer_per_question,
       total_questions: quiz.total_questions,
+      xp_reward: quiz.xp_reward,
     });
 
     // Fetch existing questions
@@ -392,7 +407,7 @@ export function QuizzesManager() {
                     <Label>Difficulty Level</Label>
                     <Select
                       value={form.difficulty}
-                      onValueChange={(v: QuizDifficulty) => setForm({ ...form, difficulty: v })}
+                      onValueChange={(v: QuizDifficulty) => setForm({ ...form, difficulty: v, xp_reward: getDefaultXP(v) })}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -414,6 +429,26 @@ export function QuizzesManager() {
                       value={form.total_questions}
                       onChange={(e) => setForm({ ...form, total_questions: parseInt(e.target.value) || 5 })}
                     />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="xp_reward" className="flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-yellow-500" />
+                      XP Reward
+                    </Label>
+                    <Input
+                      id="xp_reward"
+                      type="number"
+                      min={0}
+                      max={1000}
+                      value={form.xp_reward}
+                      onChange={(e) => setForm({ ...form, xp_reward: parseInt(e.target.value) || 0 })}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      XP earned on first completion
+                    </p>
                   </div>
                 </div>
 
@@ -552,6 +587,10 @@ export function QuizzesManager() {
                       </Badge>
                       <Badge className={getDifficultyColor(quiz.difficulty)} variant="outline">
                         {quiz.difficulty.charAt(0).toUpperCase() + quiz.difficulty.slice(1)}
+                      </Badge>
+                      <Badge variant="outline" className="flex items-center gap-1 bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
+                        <Zap className="w-3 h-3" />
+                        +{quiz.xp_reward} XP
                       </Badge>
                     </div>
                     {quiz.description && (

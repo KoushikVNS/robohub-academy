@@ -14,7 +14,8 @@ import {
   Trophy,
   ArrowRight,
   Lightbulb,
-  RotateCcw
+  RotateCcw,
+  Zap
 } from 'lucide-react';
 
 interface Question {
@@ -33,6 +34,7 @@ interface Quiz {
   difficulty: 'easy' | 'medium' | 'hard';
   timer_per_question: number;
   total_questions: number;
+  xp_reward?: number;
 }
 
 interface QuizPlayerProps {
@@ -52,9 +54,23 @@ export function QuizPlayer({ quiz, onClose }: QuizPlayerProps) {
   const [showHint, setShowHint] = useState(false);
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [startTime] = useState(Date.now());
+  const [xpEarned, setXpEarned] = useState<number | null>(null);
+  const [isFirstAttempt, setIsFirstAttempt] = useState(true);
 
   useEffect(() => {
     const fetchQuestions = async () => {
+      // Check if this is the first attempt
+      if (user) {
+        const { data: existingAttempts } = await supabase
+          .from('quiz_attempts')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('quiz_id', quiz.id)
+          .limit(1);
+        
+        setIsFirstAttempt(!existingAttempts || existingAttempts.length === 0);
+      }
+
       const { data, error } = await supabase
         .from('quiz_questions')
         .select('*')
@@ -84,7 +100,7 @@ export function QuizPlayer({ quiz, onClose }: QuizPlayerProps) {
     };
 
     fetchQuestions();
-  }, [quiz.id, onClose]);
+  }, [quiz.id, onClose, user]);
 
   // Timer countdown
   useEffect(() => {
@@ -148,16 +164,49 @@ export function QuizPlayer({ quiz, onClose }: QuizPlayerProps) {
   const completeQuiz = async () => {
     setQuizCompleted(true);
     const timeTaken = Math.floor((Date.now() - startTime) / 1000);
+    const finalScore = score + (selectedAnswer === questions[currentIndex]?.correct_answer ? 1 : 0);
 
     // Save attempt to database
     if (user) {
       await supabase.from('quiz_attempts').insert({
         user_id: user.id,
         quiz_id: quiz.id,
-        score: score + (selectedAnswer === questions[currentIndex]?.correct_answer ? 1 : 0),
+        score: finalScore,
         total_questions: questions.length,
         time_taken_seconds: timeTaken,
       });
+
+      // Award XP only on first attempt
+      if (isFirstAttempt && quiz.xp_reward && quiz.xp_reward > 0) {
+        // Create XP transaction
+        const { error: txError } = await supabase
+          .from('xp_transactions')
+          .insert({
+            user_id: user.id,
+            amount: quiz.xp_reward,
+            transaction_type: 'quiz_completion',
+            reference_id: quiz.id,
+            reason: `Completed quiz: ${quiz.title}`,
+          });
+
+        if (!txError) {
+          // Update profile XP
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('xp_points')
+            .eq('user_id', user.id)
+            .single();
+
+          if (profile) {
+            await supabase
+              .from('profiles')
+              .update({ xp_points: profile.xp_points + quiz.xp_reward })
+              .eq('user_id', user.id);
+          }
+
+          setXpEarned(quiz.xp_reward);
+        }
+      }
     }
   };
 
@@ -201,6 +250,20 @@ export function QuizPlayer({ quiz, onClose }: QuizPlayerProps) {
                 {scoreMessage.text}
               </p>
             </div>
+
+            {xpEarned && (
+              <div className="flex items-center justify-center gap-2 p-4 bg-yellow-500/10 rounded-lg">
+                <Zap className="w-6 h-6 text-yellow-500" />
+                <span className="text-lg font-bold text-yellow-600">+{xpEarned} XP Earned!</span>
+              </div>
+            )}
+
+            {!isFirstAttempt && quiz.xp_reward && quiz.xp_reward > 0 && (
+              <p className="text-center text-sm text-muted-foreground">
+                XP already earned on first attempt
+              </p>
+            )}
+
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Accuracy</span>
@@ -221,6 +284,8 @@ export function QuizPlayer({ quiz, onClose }: QuizPlayerProps) {
                   setShowResult(false);
                   setQuizCompleted(false);
                   setTimeLeft(quiz.timer_per_question);
+                  setXpEarned(null);
+                  setIsFirstAttempt(false);
                 }}
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
@@ -241,7 +306,15 @@ export function QuizPlayer({ quiz, onClose }: QuizPlayerProps) {
       <Card className="w-full max-w-2xl">
         <CardHeader className="space-y-4">
           <div className="flex items-center justify-between">
-            <Badge variant="outline">{quiz.title}</Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline">{quiz.title}</Badge>
+              {quiz.xp_reward && isFirstAttempt && (
+                <Badge variant="outline" className="flex items-center gap-1 bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
+                  <Zap className="w-3 h-3" />
+                  +{quiz.xp_reward} XP
+                </Badge>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               <Clock className={`w-4 h-4 ${timeLeft <= 10 ? 'text-destructive animate-pulse' : ''}`} />
               <span className={`font-mono ${timeLeft <= 10 ? 'text-destructive font-bold' : ''}`}>

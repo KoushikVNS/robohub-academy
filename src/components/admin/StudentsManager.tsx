@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Loader2, Search, Trash2, UserCog, ArrowUpDown, Filter } from 'lucide-react';
+import { Loader2, Search, Trash2, UserCog, ArrowUpDown, Filter, Zap, History } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { XPAdjustmentDialog } from './XPAdjustmentDialog';
+import { XPHistoryDialog } from './XPHistoryDialog';
 
 interface Profile {
   id: string;
@@ -50,6 +52,11 @@ export function StudentsManager() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [xpFilter, setXpFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
 
+  // XP Dialog states
+  const [xpDialogOpen, setXpDialogOpen] = useState(false);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
+
   const fetchData = async () => {
     setLoading(true);
     const [profilesRes, rolesRes] = await Promise.all([
@@ -68,12 +75,10 @@ export function StudentsManager() {
 
   const getUserRole = (userId: string) => {
     const userRoles = roles.filter(r => r.user_id === userId);
-    // This app treats "admin" as highest privilege for display
     return userRoles.some(r => r.role === 'admin') ? 'admin' : 'member';
   };
 
   const toggleAdminRole = async (userId: string, currentRole: string) => {
-    // user_roles supports multiple roles per user (unique on user_id + role)
     if (currentRole === 'admin') {
       const { error } = await supabase
         .from('user_roles')
@@ -96,7 +101,6 @@ export function StudentsManager() {
       .from('user_roles')
       .insert({ user_id: userId, role: 'admin' });
 
-    // If the admin row already exists, treat as success
     if (error) {
       const anyErr: any = error;
       if (anyErr?.code === '23505') {
@@ -126,6 +130,16 @@ export function StudentsManager() {
     }
     toast.success('Student deleted');
     fetchData();
+  };
+
+  const handleAdjustXP = (profile: Profile) => {
+    setSelectedProfile(profile);
+    setXpDialogOpen(true);
+  };
+
+  const handleViewHistory = (profile: Profile) => {
+    setSelectedProfile(profile);
+    setHistoryDialogOpen(true);
   };
 
   const filteredProfiles = profiles
@@ -247,7 +261,23 @@ export function StudentsManager() {
                 </TableCell>
                 <TableCell>{new Date(profile.created_at).toLocaleDateString()}</TableCell>
                 <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
+                  <div className="flex items-center justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleAdjustXP(profile)}
+                      title="Adjust XP"
+                    >
+                      <Zap className="w-4 h-4 text-yellow-500" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleViewHistory(profile)}
+                      title="View XP History"
+                    >
+                      <History className="w-4 h-4" />
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -291,6 +321,19 @@ export function StudentsManager() {
           </TableBody>
         </Table>
       </div>
+
+      <XPAdjustmentDialog
+        open={xpDialogOpen}
+        onOpenChange={setXpDialogOpen}
+        profile={selectedProfile}
+        onSuccess={fetchData}
+      />
+
+      <XPHistoryDialog
+        open={historyDialogOpen}
+        onOpenChange={setHistoryDialogOpen}
+        profile={selectedProfile}
+      />
     </div>
   );
 }
