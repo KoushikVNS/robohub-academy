@@ -151,7 +151,7 @@ export function AuthForm({
         <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-4 glow overflow-hidden">
           <img src={roboClubLogo} alt="RoboClub Logo" className="w-full h-full object-contain" />
         </div>
-        <h1 className="text-3xl font-display font-bold text-foreground">
+        <h1 className="text-3xl font-display font-bold text-primary">
           Join the Club
         </h1>
         <p className="text-muted-foreground mt-2">
