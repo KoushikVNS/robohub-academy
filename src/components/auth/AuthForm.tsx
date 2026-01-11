@@ -192,7 +192,7 @@ export function AuthForm({
             <Label htmlFor="mobile_number">Mobile Number</Label>
             <div className="relative">
               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input id="mobile_number" type="tel" placeholder="9876543210" className="pl-10 h-12" {...signupForm.register('mobile_number')} />
+              <Input id="mobile_number" type="tel" placeholder="98XXXXXXXX" className="pl-10 h-12" {...signupForm.register('mobile_number')} />
             </div>
             {signupForm.formState.errors.mobile_number && <p className="text-sm text-destructive">{signupForm.formState.errors.mobile_number.message}</p>}
           </div>
