@@ -8,24 +8,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { LogOut, Video, MessageSquare, Trophy, Wrench, BookOpen, Zap, ChevronRight, Settings, User, Bell } from 'lucide-react';
 import { format } from 'date-fns';
 import roboClubLogo from '@/assets/roboclub-logo.png';
-
 interface Announcement {
   id: string;
   title: string;
   content: string;
   created_at: string;
 }
-
 interface DashboardStats {
   videosWatched: number;
   quizzesCompleted: number;
   xpPoints: number;
   rank: number | null;
 }
-
 export default function Dashboard() {
-  const { user, profile, signOut } = useAuth();
-  const { isAdmin } = useAdmin();
+  const {
+    user,
+    profile,
+    signOut
+  } = useAuth();
+  const {
+    isAdmin
+  } = useAdmin();
   const navigate = useNavigate();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,81 +36,64 @@ export default function Dashboard() {
     videosWatched: 0,
     quizzesCompleted: 0,
     xpPoints: 0,
-    rank: null,
+    rank: null
   });
-
   useEffect(() => {
     const fetchDashboardData = async () => {
       if (!user) return;
 
       // Fetch all data in parallel
       const [announcementsRes, videosRes, quizzesRes, rankRes] = await Promise.all([
-        // Announcements
-        supabase
-          .from('announcements')
-          .select('id, title, content, created_at')
-          .order('created_at', { ascending: false })
-          .limit(5),
-        // Videos watched count
-        supabase
-          .from('video_watch_history')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', user.id),
-        // Quizzes completed count
-        supabase
-          .from('quiz_attempts')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', user.id),
-        // Get rank by counting users with more XP
-        supabase
-          .from('profiles')
-          .select('xp_points')
-          .gt('xp_points', profile?.xp_points || 0),
-      ]);
-
+      // Announcements
+      supabase.from('announcements').select('id, title, content, created_at').order('created_at', {
+        ascending: false
+      }).limit(5),
+      // Videos watched count
+      supabase.from('video_watch_history').select('id', {
+        count: 'exact',
+        head: true
+      }).eq('user_id', user.id),
+      // Quizzes completed count
+      supabase.from('quiz_attempts').select('id', {
+        count: 'exact',
+        head: true
+      }).eq('user_id', user.id),
+      // Get rank by counting users with more XP
+      supabase.from('profiles').select('xp_points').gt('xp_points', profile?.xp_points || 0)]);
       if (!announcementsRes.error && announcementsRes.data) {
         setAnnouncements(announcementsRes.data);
       }
-
       setStats({
         videosWatched: videosRes.count || 0,
         quizzesCompleted: quizzesRes.count || 0,
         xpPoints: profile?.xp_points || 0,
-        rank: rankRes.data ? rankRes.data.length + 1 : null,
+        rank: rankRes.data ? rankRes.data.length + 1 : null
       });
-
       setLoading(false);
     };
-
     fetchDashboardData();
   }, [user, profile?.xp_points]);
-
-  const quickStats = [
-    {
-      label: 'Videos Watched',
-      value: stats.videosWatched.toString(),
-      icon: Video,
-      color: 'text-primary',
-    },
-    {
-      label: 'Quizzes Completed',
-      value: stats.quizzesCompleted.toString(),
-      icon: BookOpen,
-      color: 'text-secondary',
-    },
-    {
-      label: 'XP Points',
-      value: stats.xpPoints.toString(),
-      icon: Zap,
-      color: 'text-accent',
-    },
-    {
-      label: 'Rank',
-      value: stats.rank ? `#${stats.rank}` : '-',
-      icon: Trophy,
-      color: 'text-robot-orange',
-    },
-  ];
+  const quickStats = [{
+    label: 'Videos Watched',
+    value: stats.videosWatched.toString(),
+    icon: Video,
+    color: 'text-primary'
+  }, {
+    label: 'Quizzes Completed',
+    value: stats.quizzesCompleted.toString(),
+    icon: BookOpen,
+    color: 'text-secondary'
+  }, {
+    label: 'XP Points',
+    value: stats.xpPoints.toString(),
+    icon: Zap,
+    color: 'text-accent'
+  }, {
+    label: 'Rank',
+    value: stats.rank ? `#${stats.rank}` : '-',
+    icon: Trophy,
+    color: 'text-robot-orange'
+  }];
   const features = [{
     title: 'Learning Hub',
     description: 'Watch tutorials, take quizzes, and earn XP',
@@ -172,7 +158,7 @@ export default function Dashboard() {
       <main className="container mx-auto px-4 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h1 className="text-3xl font-display font-bold mb-2">
+          <h1 className="text-3xl font-display font-bold mb-2 text-accent">
             Welcome back, {profile?.full_name?.split(' ')[0]}! 👋
           </h1>
           <p className="text-muted-foreground">
