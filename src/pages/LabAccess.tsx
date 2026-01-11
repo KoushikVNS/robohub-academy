@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Bot, ArrowLeft, Package, ClipboardList, History } from 'lucide-react';
+import { ArrowLeft, Package, ClipboardList, History } from 'lucide-react';
+import roboClubLogo from '@/assets/roboclub-logo.png';
 import { ComponentsList } from '@/components/lab/ComponentsList';
 import { LabRequestForm } from '@/components/lab/LabRequestForm';
 import { MyRequests } from '@/components/lab/MyRequests';
@@ -22,8 +23,8 @@ export default function LabAccess() {
             <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
-              <Bot className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 rounded-xl overflow-hidden">
+              <img src={roboClubLogo} alt="RoboClub Logo" className="w-full h-full object-cover" />
             </div>
             <span className="text-xl font-display font-bold">Lab Access</span>
           </div>
