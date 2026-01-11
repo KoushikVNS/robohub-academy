@@ -183,7 +183,7 @@ export function AuthForm({
             <Label htmlFor="batch_number">Batch Number</Label>
             <div className="relative">
               <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input id="batch_number" type="text" placeholder="2024-A" className="pl-10 h-12" {...signupForm.register('batch_number')} />
+              <Input id="batch_number" type="text" placeholder="SOT24B1" className="pl-10 h-12" {...signupForm.register('batch_number')} />
             </div>
             {signupForm.formState.errors.batch_number && <p className="text-sm text-destructive">{signupForm.formState.errors.batch_number.message}</p>}
           </div>
