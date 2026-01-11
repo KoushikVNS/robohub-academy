@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Package, ClipboardList, History } from 'lucide-react';
-import roboClubLogo from '@/assets/roboclub-logo.png';
+import roboClubLogo from '@/assets/roboclub-logo.webp';
 import { ComponentsList } from '@/components/lab/ComponentsList';
 import { LabRequestForm } from '@/components/lab/LabRequestForm';
 import { MyRequests } from '@/components/lab/MyRequests';

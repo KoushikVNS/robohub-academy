@@ -14,7 +14,7 @@ import {
   Crown,
   Calendar
 } from 'lucide-react';
-import roboClubLogo from '@/assets/roboclub-logo.png';
+import roboClubLogo from '@/assets/roboclub-logo.webp';
 
 interface LeaderboardEntry {
   id: string;
