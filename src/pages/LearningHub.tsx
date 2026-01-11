@@ -1,5 +1,5 @@
 import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -58,6 +58,7 @@ const getYouTubeVideoId = (url: string): string | null => {
 export default function LearningHub() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [videos, setVideos] = useState<Video[]>([]);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,6 +66,9 @@ export default function LearningHub() {
   const [watchedVideos, setWatchedVideos] = useState<Set<string>>(new Set());
   const [completedQuizzes, setCompletedQuizzes] = useState<Set<string>>(new Set());
   const [markingWatched, setMarkingWatched] = useState<string | null>(null);
+  
+  // Get initial tab from URL query param
+  const initialTab = searchParams.get('tab') === 'quizzes' ? 'quizzes' : 'videos';
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -207,7 +211,7 @@ export default function LearningHub() {
           </p>
         </div>
 
-        <Tabs defaultValue="videos" className="space-y-6">
+        <Tabs defaultValue={initialTab} className="space-y-6">
           <TabsList className="grid w-full max-w-md grid-cols-2">
             <TabsTrigger value="videos" className="flex items-center gap-2">
               <VideoIcon className="w-4 h-4" />
