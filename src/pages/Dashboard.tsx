@@ -9,7 +9,6 @@ import { LogOut, Video, MessageSquare, Trophy, Wrench, BookOpen, Zap, ChevronRig
 import { format } from 'date-fns';
 import roboClubLogo from '@/assets/roboclub-logo.png';
 import { Walkthrough } from '@/components/Walkthrough';
-
 interface Announcement {
   id: string;
   title: string;
@@ -22,9 +21,7 @@ interface DashboardStats {
   xpPoints: number;
   rank: number | null;
 }
-
 const WALKTHROUGH_KEY = 'chintan_core_walkthrough_completed';
-
 export default function Dashboard() {
   const {
     user,
@@ -50,7 +47,6 @@ export default function Dashboard() {
   useEffect(() => {
     const hasCompletedWalkthrough = localStorage.getItem(WALKTHROUGH_KEY);
     const isNewSignup = location.state?.newSignup;
-    
     if (isNewSignup || !hasCompletedWalkthrough) {
       // Small delay to ensure DOM is ready
       const timer = setTimeout(() => {
@@ -59,12 +55,10 @@ export default function Dashboard() {
       return () => clearTimeout(timer);
     }
   }, [location.state]);
-
   const handleWalkthroughComplete = () => {
     setRunWalkthrough(false);
     localStorage.setItem(WALKTHROUGH_KEY, 'true');
   };
-
   const startWalkthrough = () => {
     setRunWalkthrough(true);
   };
@@ -171,7 +165,7 @@ export default function Dashboard() {
             <div className="w-10 h-10 rounded-xl overflow-hidden">
               <img src={roboClubLogo} alt="RoboClub Logo" className="w-full h-full object-cover" />
             </div>
-            <span className="text-xl font-display font-bold">चिंतनCore</span>
+            <span className="text-xl font-display font-bold text-accent">त्रिnetraCore</span>
           </div>
 
           <div className="flex items-center gap-4">
@@ -179,13 +173,7 @@ export default function Dashboard() {
               <p className="text-sm font-medium">{profile?.full_name}</p>
               <p className="text-xs text-muted-foreground">Batch {profile?.batch_number}</p>
             </div>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={startWalkthrough}
-              title="Start Tour"
-              data-tour="help"
-            >
+            <Button variant="ghost" size="icon" onClick={startWalkthrough} title="Start Tour" data-tour="help">
               <HelpCircle className="w-5 h-5" />
             </Button>
             <Button variant="ghost" size="icon" onClick={() => navigate('/profile')} data-tour="profile">
