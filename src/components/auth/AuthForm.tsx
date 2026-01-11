@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { Loader2, Mail, Bot, Lock, User, IdCard, Phone, Hash } from 'lucide-react';
+import { Loader2, Mail, Lock, User, IdCard, Phone, Hash } from 'lucide-react';
+import roboClubLogo from '@/assets/roboclub-logo.png';
 const signupSchema = z.object({
   full_name: z.string().trim().min(2, 'Name must be at least 2 characters').max(100),
   enrollment_id: z.string().trim().min(1, 'Enrollment ID is required').max(50),
@@ -97,8 +98,8 @@ export function AuthForm({
   if (mode === 'login') {
     return <div className="w-full max-w-md mx-auto">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl gradient-primary mb-4 glow">
-            <Bot className="w-8 h-8 text-primary-foreground" />
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-4 glow overflow-hidden">
+            <img src={roboClubLogo} alt="RoboClub Logo" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-3xl font-display font-bold text-primary">
             Welcome Back
@@ -147,8 +148,8 @@ export function AuthForm({
   // Signup form
   return <div className="w-full max-w-md mx-auto">
       <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl gradient-primary mb-4 glow">
-          <Bot className="w-8 h-8 text-primary-foreground" />
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-4 glow overflow-hidden">
+          <img src={roboClubLogo} alt="RoboClub Logo" className="w-full h-full object-contain" />
         </div>
         <h1 className="text-3xl font-display font-bold text-foreground">
           Join the Club
