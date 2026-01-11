@@ -11,6 +11,7 @@ interface Profile {
   mobile_number: string | null;
   avatar_url: string | null;
   bio: string | null;
+  xp_points: number;
 }
 
 interface SignUpData {
