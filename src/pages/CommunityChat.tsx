@@ -14,7 +14,7 @@ import {
   Users,
   Trash2
 } from 'lucide-react';
-import roboClubLogo from '@/assets/roboclub-logo.png';
+import roboClubLogo from '@/assets/roboclub-logo.webp';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { format } from 'date-fns';
 

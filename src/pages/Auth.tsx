@@ -4,7 +4,7 @@ import { AuthForm } from '@/components/auth/AuthForm';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2, Cpu, Cog, Zap } from 'lucide-react';
 import mascotVideo from '@/assets/mascot-video.mp4';
-import roboClubLogo from '@/assets/roboclub-logo.png';
+import roboClubLogo from '@/assets/roboclub-logo.webp';
 export default function Auth() {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [isNewUser, setIsNewUser] = useState(false);

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LogOut, Video, MessageSquare, Trophy, Wrench, BookOpen, Zap, ChevronRight, Settings, User, Bell, HelpCircle } from 'lucide-react';
 import { format } from 'date-fns';
-import roboClubLogo from '@/assets/roboclub-logo.png';
+import roboClubLogo from '@/assets/roboclub-logo.webp';
 import { Walkthrough } from '@/components/Walkthrough';
 interface Announcement {
   id: string;

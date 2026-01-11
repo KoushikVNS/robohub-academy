@@ -16,7 +16,7 @@ import {
   Zap,
   CheckCircle2
 } from 'lucide-react';
-import roboClubLogo from '@/assets/roboclub-logo.png';
+import roboClubLogo from '@/assets/roboclub-logo.webp';
 import { format } from 'date-fns';
 
 interface Video {

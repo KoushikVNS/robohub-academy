@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Users, Linkedin } from 'lucide-react';
-import roboClubLogo from '@/assets/roboclub-logo.png';
+import roboClubLogo from '@/assets/roboclub-logo.webp';
 
 // Import team images
 import kaushikImg from '@/assets/team/kaushik-chakraborty.png';

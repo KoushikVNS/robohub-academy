@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { Loader2, Mail, Lock, User, IdCard, Phone, Hash } from 'lucide-react';
-import roboClubLogo from '@/assets/roboclub-logo.png';
+import roboClubLogo from '@/assets/roboclub-logo.webp';
 const signupSchema = z.object({
   full_name: z.string().trim().min(2, 'Name must be at least 2 characters').max(100),
   enrollment_id: z.string().trim().min(1, 'Enrollment ID is required').max(50),
