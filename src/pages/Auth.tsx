@@ -140,7 +140,15 @@ export default function Auth() {
         <div className="w-full max-w-md">
           {/* Mobile logo & branding */}
           <div className="lg:hidden flex flex-col items-center justify-center gap-3 mb-6">
-            <img src={roboClubLogo} alt="RoboClub Logo" className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-[0_0_20px_rgba(168,85,247,0.5)]" />
+            <img 
+              src={roboClubLogo} 
+              alt="RoboClub Logo" 
+              width={80}
+              height={80}
+              loading="eager"
+              decoding="async"
+              className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-[0_0_20px_rgba(168,85,247,0.5)]" 
+            />
             <span className="text-xl sm:text-2xl font-display font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
               RoboClub
             </span>
