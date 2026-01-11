@@ -141,4 +141,23 @@
   .glow-sm {
     box-shadow: 0 0 20px hsl(var(--primary) / 0.2);
   }
+
+  /* Shooting star animation for galaxy theme */
+  @keyframes shooting-star {
+    0% {
+      transform: translateX(0) translateY(0) rotate(45deg);
+      opacity: 1;
+    }
+    70% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(300px) translateY(300px) rotate(45deg);
+      opacity: 0;
+    }
+  }
+
+  .animate-shooting-star {
+    animation: shooting-star 3s linear infinite;
+  }
 }
