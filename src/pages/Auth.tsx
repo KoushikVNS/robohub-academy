@@ -7,16 +7,23 @@ import mascotVideo from '@/assets/mascot-video.mp4';
 import roboClubLogo from '@/assets/roboclub-logo.png';
 export default function Auth() {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [isNewUser, setIsNewUser] = useState(false);
   const {
     user,
     loading
   } = useAuth();
   const navigate = useNavigate();
+
+  const handleSignupSuccess = () => {
+    setIsNewUser(true);
+  };
+
   useEffect(() => {
     if (user) {
-      navigate('/');
+      // Navigate with newSignup flag to trigger walkthrough
+      navigate('/', { state: { newSignup: isNewUser } });
     }
-  }, [user, navigate]);
+  }, [user, navigate, isNewUser]);
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center bg-[#0a0a1a]">
         <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
@@ -144,7 +151,12 @@ export default function Auth() {
 
           {/* Auth Form Card */}
           <div className="bg-[#12122a]/80 backdrop-blur-xl border border-purple-500/20 rounded-xl sm:rounded-2xl p-5 sm:p-8 shadow-[0_0_40px_rgba(168,85,247,0.15)] sm:shadow-[0_0_60px_rgba(168,85,247,0.15)]">
-            <AuthForm mode={mode} onToggleMode={() => setMode(mode === 'login' ? 'signup' : 'login')} onSuccess={() => navigate('/')} />
+            <AuthForm mode={mode} onToggleMode={() => setMode(mode === 'login' ? 'signup' : 'login')} onSuccess={() => {
+              if (mode === 'signup') {
+                handleSignupSuccess();
+              }
+              navigate('/', { state: { newSignup: mode === 'signup' } });
+            }} />
           </div>
         </div>
       </div>
