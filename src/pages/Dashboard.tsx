@@ -5,62 +5,108 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bot, LogOut, Video, MessageSquare, Trophy, Wrench, BookOpen, Users, Zap, ChevronRight, Settings, User, Bell } from 'lucide-react';
+import { Bot, LogOut, Video, MessageSquare, Trophy, Wrench, BookOpen, Zap, ChevronRight, Settings, User, Bell } from 'lucide-react';
 import { format } from 'date-fns';
+
 interface Announcement {
   id: string;
   title: string;
   content: string;
   created_at: string;
 }
+
+interface DashboardStats {
+  videosWatched: number;
+  quizzesCompleted: number;
+  xpPoints: number;
+  rank: number | null;
+}
+
 export default function Dashboard() {
-  const {
-    user,
-    profile,
-    signOut
-  } = useAuth();
-  const {
-    isAdmin
-  } = useAdmin();
+  const { user, profile, signOut } = useAuth();
+  const { isAdmin } = useAdmin();
   const navigate = useNavigate();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats>({
+    videosWatched: 0,
+    quizzesCompleted: 0,
+    xpPoints: 0,
+    rank: null,
+  });
+
   useEffect(() => {
-    const fetchAnnouncements = async () => {
-      const {
-        data,
-        error
-      } = await supabase.from('announcements').select('id, title, content, created_at').order('created_at', {
-        ascending: false
-      }).limit(5);
-      if (!error && data) {
-        setAnnouncements(data);
+    const fetchDashboardData = async () => {
+      if (!user) return;
+
+      // Fetch all data in parallel
+      const [announcementsRes, videosRes, quizzesRes, rankRes] = await Promise.all([
+        // Announcements
+        supabase
+          .from('announcements')
+          .select('id, title, content, created_at')
+          .order('created_at', { ascending: false })
+          .limit(5),
+        // Videos watched count
+        supabase
+          .from('video_watch_history')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id),
+        // Quizzes completed count
+        supabase
+          .from('quiz_attempts')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id),
+        // Get rank by counting users with more XP
+        supabase
+          .from('profiles')
+          .select('xp_points')
+          .gt('xp_points', profile?.xp_points || 0),
+      ]);
+
+      if (!announcementsRes.error && announcementsRes.data) {
+        setAnnouncements(announcementsRes.data);
       }
+
+      setStats({
+        videosWatched: videosRes.count || 0,
+        quizzesCompleted: quizzesRes.count || 0,
+        xpPoints: profile?.xp_points || 0,
+        rank: rankRes.data ? rankRes.data.length + 1 : null,
+      });
+
       setLoading(false);
     };
-    fetchAnnouncements();
-  }, []);
-  const quickStats = [{
-    label: 'Videos Watched',
-    value: '0',
-    icon: Video,
-    color: 'text-primary'
-  }, {
-    label: 'Quizzes Completed',
-    value: '0',
-    icon: BookOpen,
-    color: 'text-secondary'
-  }, {
-    label: 'XP Points',
-    value: '0',
-    icon: Zap,
-    color: 'text-accent'
-  }, {
-    label: 'Rank',
-    value: '-',
-    icon: Trophy,
-    color: 'text-robot-orange'
-  }];
+
+    fetchDashboardData();
+  }, [user, profile?.xp_points]);
+
+  const quickStats = [
+    {
+      label: 'Videos Watched',
+      value: stats.videosWatched.toString(),
+      icon: Video,
+      color: 'text-primary',
+    },
+    {
+      label: 'Quizzes Completed',
+      value: stats.quizzesCompleted.toString(),
+      icon: BookOpen,
+      color: 'text-secondary',
+    },
+    {
+      label: 'XP Points',
+      value: stats.xpPoints.toString(),
+      icon: Zap,
+      color: 'text-accent',
+    },
+    {
+      label: 'Rank',
+      value: stats.rank ? `#${stats.rank}` : '-',
+      icon: Trophy,
+      color: 'text-robot-orange',
+    },
+  ];
   const features = [{
     title: 'Learning Hub',
     description: 'Watch tutorials, take quizzes, and earn XP',
