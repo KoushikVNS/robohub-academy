@@ -1,13 +1,15 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useAdmin } from '@/hooks/useAdmin';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LogOut, Video, MessageSquare, Trophy, Wrench, BookOpen, Zap, ChevronRight, Settings, User, Bell } from 'lucide-react';
+import { LogOut, Video, MessageSquare, Trophy, Wrench, BookOpen, Zap, ChevronRight, Settings, User, Bell, HelpCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import roboClubLogo from '@/assets/roboclub-logo.png';
+import { Walkthrough } from '@/components/Walkthrough';
+
 interface Announcement {
   id: string;
   title: string;
@@ -20,6 +22,9 @@ interface DashboardStats {
   xpPoints: number;
   rank: number | null;
 }
+
+const WALKTHROUGH_KEY = 'chintan_core_walkthrough_completed';
+
 export default function Dashboard() {
   const {
     user,
@@ -30,6 +35,7 @@ export default function Dashboard() {
     isAdmin
   } = useAdmin();
   const navigate = useNavigate();
+  const location = useLocation();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
@@ -38,6 +44,30 @@ export default function Dashboard() {
     xpPoints: 0,
     rank: null
   });
+  const [runWalkthrough, setRunWalkthrough] = useState(false);
+
+  // Check if user should see walkthrough (new signup or manual trigger)
+  useEffect(() => {
+    const hasCompletedWalkthrough = localStorage.getItem(WALKTHROUGH_KEY);
+    const isNewSignup = location.state?.newSignup;
+    
+    if (isNewSignup || !hasCompletedWalkthrough) {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        setRunWalkthrough(true);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [location.state]);
+
+  const handleWalkthroughComplete = () => {
+    setRunWalkthrough(false);
+    localStorage.setItem(WALKTHROUGH_KEY, 'true');
+  };
+
+  const startWalkthrough = () => {
+    setRunWalkthrough(true);
+  };
   useEffect(() => {
     const fetchDashboardData = async () => {
       if (!user) return;
@@ -99,33 +129,41 @@ export default function Dashboard() {
     description: 'Watch tutorials, take quizzes, and earn XP',
     icon: Video,
     color: 'bg-primary/10 text-primary',
-    href: '/learn'
+    href: '/learn',
+    tourId: 'learning-hub'
   }, {
     title: 'Community Chat',
     description: 'Connect with fellow robotics enthusiasts',
     icon: MessageSquare,
     color: 'bg-secondary/10 text-secondary',
-    href: '/chat'
+    href: '/chat',
+    tourId: 'community-chat'
   }, {
     title: 'Lab Access',
     description: 'Request components for your projects',
     icon: Wrench,
     color: 'bg-accent/10 text-accent',
-    href: '/lab'
+    href: '/lab',
+    tourId: 'lab-access'
   }, {
     title: 'Leaderboard',
     description: 'See how you rank among members',
     icon: Trophy,
     color: 'bg-robot-orange/10 text-robot-orange',
-    href: '/leaderboard'
+    href: '/leaderboard',
+    tourId: 'leaderboard'
   }, {
     title: 'About Us',
     description: 'Meet our amazing team members',
     icon: User,
     color: 'bg-purple-500/10 text-purple-500',
-    href: '/about'
+    href: '/about',
+    tourId: 'about-us'
   }];
   return <div className="min-h-screen bg-background">
+      {/* Walkthrough Component */}
+      <Walkthrough run={runWalkthrough} onComplete={handleWalkthroughComplete} />
+
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -141,7 +179,16 @@ export default function Dashboard() {
               <p className="text-sm font-medium">{profile?.full_name}</p>
               <p className="text-xs text-muted-foreground">Batch {profile?.batch_number}</p>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => navigate('/profile')}>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={startWalkthrough}
+              title="Start Tour"
+              data-tour="help"
+            >
+              <HelpCircle className="w-5 h-5" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => navigate('/profile')} data-tour="profile">
               <User className="w-5 h-5" />
             </Button>
             {isAdmin && <Button variant="outline" size="sm" onClick={() => navigate('/admin')}>
@@ -167,7 +214,7 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" data-tour="stats">
           {quickStats.map(stat => <Card key={stat.label} className="border-border/50">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
@@ -186,7 +233,7 @@ export default function Dashboard() {
         {/* Features Grid */}
         <h2 className="text-xl font-display font-semibold mb-4">Explore Features</h2>
         <div className="grid md:grid-cols-2 gap-4 mb-8">
-          {features.map(feature => <Card key={feature.title} className="border-border/50 hover:border-primary/50 transition-colors cursor-pointer group" onClick={() => navigate(feature.href)}>
+          {features.map(feature => <Card key={feature.title} className="border-border/50 hover:border-primary/50 transition-colors cursor-pointer group" onClick={() => navigate(feature.href)} data-tour={feature.tourId}>
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-4">
@@ -205,7 +252,7 @@ export default function Dashboard() {
         </div>
 
         {/* Announcements Section */}
-        <Card className="border-border/50">
+        <Card className="border-border/50" data-tour="announcements">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Bell className="w-5 h-5 text-primary" />
