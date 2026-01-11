@@ -174,7 +174,7 @@ export function AuthForm({
             <Label htmlFor="enrollment_id">Enrollment ID</Label>
             <div className="relative">
               <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input id="enrollment_id" type="text" placeholder="ENR123456" className="pl-10 h-12" {...signupForm.register('enrollment_id')} />
+              <Input id="enrollment_id" type="text" placeholder="240XXXXXXX" className="pl-10 h-12" {...signupForm.register('enrollment_id')} />
             </div>
             {signupForm.formState.errors.enrollment_id && <p className="text-sm text-destructive">{signupForm.formState.errors.enrollment_id.message}</p>}
           </div>
