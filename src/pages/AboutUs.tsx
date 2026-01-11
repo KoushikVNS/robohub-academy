@@ -2,22 +2,25 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Users, Linkedin } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import roboClubLogo from '@/assets/roboclub-logo.webp';
 
-// Import team images
-import kaushikImg from '@/assets/team/kaushik-chakraborty.png';
-import piyushImg from '@/assets/team/piyush-kumar.png';
-import riteshImg from '@/assets/team/ritesh-yadav.png';
-import rupikaImg from '@/assets/team/rupika-gupta.png';
-import sayanImg from '@/assets/team/sayan-das.png';
-import sohamImg from '@/assets/team/soham-patel.png';
-import pranjalImg from '@/assets/team/pranjal-singh.jpeg';
+// Team image paths for lazy loading
+const teamImagePaths = {
+  kaushik: () => import('@/assets/team/kaushik-chakraborty.png'),
+  piyush: () => import('@/assets/team/piyush-kumar.png'),
+  ritesh: () => import('@/assets/team/ritesh-yadav.png'),
+  rupika: () => import('@/assets/team/rupika-gupta.png'),
+  sayan: () => import('@/assets/team/sayan-das.png'),
+  soham: () => import('@/assets/team/soham-patel.png'),
+  pranjal: () => import('@/assets/team/pranjal-singh.jpeg'),
+};
 
 interface TeamMember {
   id: number;
   name: string;
   role: string;
-  image: string;
+  imageKey: keyof typeof teamImagePaths;
   linkedin: string;
   isPresident?: boolean;
 }
@@ -27,46 +30,78 @@ const teamMembers: TeamMember[] = [{
   id: 1,
   name: 'Sayan Das',
   role: 'Course Designer',
-  image: sayanImg,
+  imageKey: 'sayan',
   linkedin: 'https://www.linkedin.com/in/sayan-das-88b25b349'
 }, {
   id: 2,
   name: 'Rupika Gupta',
   role: 'Content Creation',
-  image: rupikaImg,
+  imageKey: 'rupika',
   linkedin: 'https://www.linkedin.com/in/rupika-gupta-057538317'
 }, {
   id: 3,
   name: 'Ritesh Yadav',
   role: 'Content Creation',
-  image: riteshImg,
+  imageKey: 'ritesh',
   linkedin: 'https://www.linkedin.com/in/ritesh-yadav-b1863a211'
 }, {
   id: 4,
   name: 'Kaushik Chakraborty',
   role: 'President & Mentor',
-  image: kaushikImg,
+  imageKey: 'kaushik',
   linkedin: 'https://www.linkedin.com/in/kaushik-chakraborty-vns/',
   isPresident: true
 }, {
   id: 5,
   name: 'Piyush Kumar',
   role: 'Content Creation',
-  image: piyushImg,
+  imageKey: 'piyush',
   linkedin: 'https://www.linkedin.com/in/piyush-kumar-bharti-4a2a85268'
 }, {
   id: 6,
   name: 'Soham Patel',
   role: 'Content Creation',
-  image: sohamImg,
+  imageKey: 'soham',
   linkedin: 'https://www.linkedin.com/in/soham-patel-3bb32b381'
 }, {
   id: 7,
   name: 'Pranjal Singh',
   role: 'Design Lead',
-  image: pranjalImg,
+  imageKey: 'pranjal',
   linkedin: 'https://www.linkedin.com/in/pranjal-singh-0b3799315'
 }];
+
+// Lazy loaded image component
+function LazyTeamImage({ imageKey, alt, className }: { imageKey: keyof typeof teamImagePaths; alt: string; className?: string }) {
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    teamImagePaths[imageKey]().then((module) => {
+      if (mounted) {
+        setImageSrc(module.default);
+        setIsLoading(false);
+      }
+    });
+    return () => { mounted = false; };
+  }, [imageKey]);
+
+  if (isLoading || !imageSrc) {
+    return <Skeleton className={`${className} bg-gray-700`} />;
+  }
+
+  return (
+    <img 
+      src={imageSrc} 
+      alt={alt} 
+      className={className}
+      loading="lazy"
+      decoding="async"
+    />
+  );
+}
+
 export default function AboutUs() {
   const navigate = useNavigate();
   const [activeIndex, setActiveIndex] = useState(3); // Start with President in center
@@ -266,7 +301,7 @@ export default function AboutUs() {
                       ${member.isPresident && index === activeIndex ? 'ring-primary ring-2 sm:ring-4' : ''}
                     `}
                   >
-                    <img src={member.image} alt={member.name} className="w-full h-full object-cover object-top" />
+                    <LazyTeamImage imageKey={member.imageKey} alt={member.name} className="w-full h-full object-cover object-top" />
                     
                     {/* President badge */}
                     {member.isPresident && index === activeIndex && (
@@ -297,7 +332,7 @@ export default function AboutUs() {
                       Contact Me
                     </h3>
                     <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden mb-3 ring-2 ring-primary/30">
-                      <img src={member.image} alt={member.name} className="w-full h-full object-cover object-top" />
+                      <LazyTeamImage imageKey={member.imageKey} alt={member.name} className="w-full h-full object-cover object-top" />
                     </div>
                     <p className="text-white/80 text-xs sm:text-sm font-medium mb-3 text-center">
                       {member.name}
