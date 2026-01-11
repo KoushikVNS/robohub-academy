@@ -5,7 +5,8 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bot, LogOut, Video, MessageSquare, Trophy, Wrench, BookOpen, Users, Zap, ChevronRight, Settings, User, Bell } from 'lucide-react';
+import { LogOut, Video, MessageSquare, Trophy, Wrench, BookOpen, Users, Zap, ChevronRight, Settings, User, Bell } from 'lucide-react';
+import roboClubLogo from '@/assets/roboclub-logo.png';
 import { format } from 'date-fns';
 interface Announcement {
   id: string;
@@ -92,7 +93,7 @@ export default function Dashboard() {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl overflow-hidden">
-              <img src="/lovable-uploads/a8576855-58d4-4073-9c4c-be32c5a2ea93.png" alt="RoboClub Logo" className="w-full h-full object-cover" />
+              <img src={roboClubLogo} alt="RoboClub Logo" className="w-full h-full object-cover" />
             </div>
             <span className="text-xl font-display font-bold">चिंतनCore</span>
           </div>
