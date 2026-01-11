@@ -280,6 +280,7 @@ export default function LearningHub() {
                           {!isWatched ? (
                             <Button 
                               size="sm" 
+                              className="bg-green-600 hover:bg-green-700 text-white"
                               onClick={() => handleMarkWatched(video)}
                               disabled={markingWatched === video.id}
                             >
