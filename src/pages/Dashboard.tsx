@@ -193,7 +193,7 @@ export default function Dashboard() {
       <main className="container mx-auto px-4 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h1 className="text-3xl font-display font-bold mb-2 text-accent">
+          <h1 className="text-3xl font-display font-bold mb-2 text-primary">
             Welcome back, {profile?.full_name?.split(' ')[0]}! 👋
           </h1>
           <p className="text-muted-foreground">
