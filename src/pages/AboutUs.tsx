@@ -11,6 +11,7 @@ import riteshImg from '@/assets/team/ritesh-yadav.png';
 import rupikaImg from '@/assets/team/rupika-gupta.png';
 import sayanImg from '@/assets/team/sayan-das.png';
 import sohamImg from '@/assets/team/soham-patel.png';
+import pranjalImg from '@/assets/team/pranjal-singh.jpeg';
 interface TeamMember {
   id: number;
   name: string;
@@ -55,8 +56,8 @@ const teamMembers: TeamMember[] = [{
   id: 7,
   name: 'Pranjal Singh',
   role: 'Design Lead',
-  image: sayanImg
-} // Using sayan as placeholder
+  image: pranjalImg
+}
 ];
 export default function AboutUs() {
   const navigate = useNavigate();
