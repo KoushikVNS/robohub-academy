@@ -65,141 +65,184 @@ export default function AboutUs() {
   const [isScrolling, setIsScrolling] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const lastScrollTime = useRef(0);
-  const handleWheel = useCallback((e: WheelEvent) => {
-    e.preventDefault();
+  const touchStartY = useRef(0);
+  const touchStartX = useRef(0);
+
+  const navigateCards = useCallback((direction: 'next' | 'prev') => {
     const now = Date.now();
-    // Throttle scroll events for smoother experience
-    if (now - lastScrollTime.current < 500) return;
+    if (now - lastScrollTime.current < 400) return;
     lastScrollTime.current = now;
     setIsScrolling(true);
-    if (e.deltaY > 0) {
-      // Scroll down - move to next (right side comes to center)
+    
+    if (direction === 'next') {
       setActiveIndex(prev => prev < teamMembers.length - 1 ? prev + 1 : prev);
-    } else if (e.deltaY < 0) {
-      // Scroll up - move to previous (left side comes to center)
+    } else {
       setActiveIndex(prev => prev > 0 ? prev - 1 : prev);
     }
-    setTimeout(() => setIsScrolling(false), 500);
+    setTimeout(() => setIsScrolling(false), 400);
   }, []);
+
+  const handleWheel = useCallback((e: WheelEvent) => {
+    e.preventDefault();
+    if (e.deltaY > 0) {
+      navigateCards('next');
+    } else if (e.deltaY < 0) {
+      navigateCards('prev');
+    }
+  }, [navigateCards]);
+
+  const handleTouchStart = useCallback((e: TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+    touchStartX.current = e.touches[0].clientX;
+  }, []);
+
+  const handleTouchEnd = useCallback((e: TouchEvent) => {
+    const touchEndY = e.changedTouches[0].clientY;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diffY = touchStartY.current - touchEndY;
+    const diffX = touchStartX.current - touchEndX;
+    
+    // Check if horizontal swipe is more significant (for mobile)
+    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+      if (diffX > 0) {
+        navigateCards('next'); // Swipe left = next
+      } else {
+        navigateCards('prev'); // Swipe right = prev
+      }
+    } else if (Math.abs(diffY) > 50) {
+      // Vertical swipe
+      if (diffY > 0) {
+        navigateCards('next'); // Swipe up = next
+      } else {
+        navigateCards('prev'); // Swipe down = prev
+      }
+    }
+  }, [navigateCards]);
+
   useEffect(() => {
     const container = containerRef.current;
     if (container) {
-      container.addEventListener('wheel', handleWheel, {
-        passive: false
-      });
+      container.addEventListener('wheel', handleWheel, { passive: false });
+      container.addEventListener('touchstart', handleTouchStart, { passive: true });
+      container.addEventListener('touchend', handleTouchEnd, { passive: true });
     }
     return () => {
       if (container) {
         container.removeEventListener('wheel', handleWheel);
+        container.removeEventListener('touchstart', handleTouchStart);
+        container.removeEventListener('touchend', handleTouchEnd);
       }
     };
-  }, [handleWheel]);
-  const getCardStyle = (index: number) => {
+  }, [handleWheel, handleTouchStart, handleTouchEnd]);
+  const getCardStyle = (index: number, isMobile: boolean) => {
     const diff = index - activeIndex;
     const absDiff = Math.abs(diff);
 
-    // Base values
-    let translateX = diff * 180; // Spacing between cards
+    // Mobile-optimized spacing
+    const spacing = isMobile ? 100 : 180;
+    let translateX = diff * spacing;
     let scale = 1;
     let opacity = 1;
     let blur = 0;
     let zIndex = 10 - absDiff;
+
     if (absDiff === 0) {
-      // Center (active) card
-      scale = 1.15;
+      scale = isMobile ? 1.05 : 1.15;
       opacity = 1;
       blur = 0;
       zIndex = 20;
     } else if (absDiff === 1) {
-      scale = 0.85;
-      opacity = 0.7;
-      blur = 2;
+      scale = isMobile ? 0.75 : 0.85;
+      opacity = isMobile ? 0.5 : 0.7;
+      blur = isMobile ? 3 : 2;
     } else if (absDiff === 2) {
-      scale = 0.7;
-      opacity = 0.5;
-      blur = 4;
+      scale = isMobile ? 0.6 : 0.7;
+      opacity = isMobile ? 0.3 : 0.5;
+      blur = isMobile ? 5 : 4;
     } else {
-      scale = 0.55;
-      opacity = 0.3;
-      blur = 6;
+      scale = isMobile ? 0.5 : 0.55;
+      opacity = isMobile ? 0.2 : 0.3;
+      blur = isMobile ? 6 : 6;
     }
+
     return {
       transform: `translateX(${translateX}px) scale(${scale})`,
       opacity,
       filter: `blur(${blur}px)`,
       zIndex,
-      transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)'
+      transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
     };
   };
-  return <div ref={containerRef} className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 overflow-hidden">
+
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  return <div ref={containerRef} className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 overflow-hidden touch-none">
       {/* Header */}
       <header className="border-b border-border/20 bg-black/30 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-              <ArrowLeft className="w-5 h-5 text-white" />
+        <div className="container mx-auto px-2 sm:px-4 h-14 sm:h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="h-8 w-8 sm:h-10 sm:w-10">
+              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </Button>
-            <div className="w-10 h-10 rounded-xl overflow-hidden">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl overflow-hidden">
               <img src={roboClubLogo} alt="RoboClub Logo" className="w-full h-full object-cover" />
             </div>
-            <span className="text-xl font-display font-bold text-white">About Us</span>
+            <span className="text-lg sm:text-xl font-display font-bold text-white">About Us</span>
           </div>
-          <div className="flex items-center gap-2 text-white/70">
-            <Users className="w-5 h-5" />
-            <span className="text-sm">Our Team</span>
+          <div className="flex items-center gap-1 sm:gap-2 text-white/70">
+            <Users className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="text-xs sm:text-sm">Our Team</span>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex flex-col items-center justify-center h-[calc(100vh-4rem)] px-4">
+      <main className="flex flex-col items-center justify-center h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] px-2 sm:px-4">
         {/* Title */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-display font-bold text-white mb-4">
+        <div className="text-center mb-6 sm:mb-12">
+          <h1 className="text-2xl sm:text-4xl md:text-5xl font-display font-bold text-white mb-2 sm:mb-4">
             Meet Our Team
           </h1>
-          <p className="text-white/60 text-lg">
-            Scroll to explore our amazing team members
+          <p className="text-white/60 text-sm sm:text-lg">
+            {isMobile ? 'Swipe to explore' : 'Scroll to explore our amazing team members'}
           </p>
-          <div className="flex items-center justify-center gap-2 mt-4">
-            <div className="w-2 h-2 rounded-full bg-white/30 animate-pulse" />
-            <span className="text-white/40 text-sm">Scroll up or down to navigate</span>
-            <div className="w-2 h-2 rounded-full bg-white/30 animate-pulse" />
+          <div className="flex items-center justify-center gap-2 mt-2 sm:mt-4">
+            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white/30 animate-pulse" />
+            <span className="text-white/40 text-xs sm:text-sm">
+              {isMobile ? 'Swipe left or right' : 'Scroll up or down to navigate'}
+            </span>
+            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white/30 animate-pulse" />
           </div>
         </div>
 
         {/* Carousel Container */}
-        <div className="relative w-full flex items-center justify-center h-[500px]">
+        <div className="relative w-full flex items-center justify-center h-[320px] sm:h-[400px] md:h-[500px]">
           {/* Cards Container */}
           <div className="relative flex items-center justify-center">
-            {teamMembers.map((member, index) => <div key={member.id} className="absolute flex flex-col items-center cursor-pointer" style={getCardStyle(index)}>
+            {teamMembers.map((member, index) => <div key={member.id} className="absolute flex flex-col items-center cursor-pointer" style={getCardStyle(index, isMobile)} onClick={() => setActiveIndex(index)}>
                 {/* Card */}
                 <div className={`
-                    relative w-48 h-72 md:w-56 md:h-80 rounded-2xl overflow-hidden
+                    relative w-36 h-52 sm:w-48 sm:h-72 md:w-56 md:h-80 rounded-xl sm:rounded-2xl overflow-hidden
                     shadow-2xl transition-all duration-500
-                    ${index === activeIndex ? 'ring-4 ring-primary/50' : ''}
-                    ${member.isPresident && index === activeIndex ? 'ring-primary ring-4' : ''}
+                    ${index === activeIndex ? 'ring-2 sm:ring-4 ring-primary/50' : ''}
+                    ${member.isPresident && index === activeIndex ? 'ring-primary ring-2 sm:ring-4' : ''}
                   `}>
                   <img src={member.image} alt={member.name} className="w-full h-full object-cover object-top" />
                   
-                  {/* Overlay gradient */}
-                  
-                  
                   {/* President badge */}
-                  {member.isPresident && index === activeIndex && <div className="absolute top-4 right-4 bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-bold animate-pulse">
+                  {member.isPresident && index === activeIndex && <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-primary text-primary-foreground px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold animate-pulse">
                       President
                     </div>}
                 </div>
 
                 {/* Name & Role (only visible for active card) */}
                 <div className={`
-                    mt-4 text-center transition-all duration-500
+                    mt-2 sm:mt-4 text-center transition-all duration-500
                     ${index === activeIndex ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
                   `}>
-                  <h3 className="text-xl font-display font-bold text-white">
+                  <h3 className="text-base sm:text-xl font-display font-bold text-white">
                     {member.name}
                   </h3>
-                  <p className="text-white/60 text-sm mt-1">
+                  <p className="text-white/60 text-xs sm:text-sm mt-0.5 sm:mt-1">
                     {member.role}
                   </p>
                 </div>
@@ -208,15 +251,15 @@ export default function AboutUs() {
         </div>
 
         {/* Position Indicators */}
-        <div className="flex items-center gap-2 mt-8">
+        <div className="flex items-center gap-1.5 sm:gap-2 mt-4 sm:mt-8">
           {teamMembers.map((_, index) => <button key={index} onClick={() => setActiveIndex(index)} className={`
-                w-2 h-2 rounded-full transition-all duration-300
-                ${index === activeIndex ? 'w-8 bg-primary' : 'bg-white/30 hover:bg-white/50'}
+                w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all duration-300
+                ${index === activeIndex ? 'w-6 sm:w-8 bg-primary' : 'bg-white/30 hover:bg-white/50'}
               `} aria-label={`Go to team member ${index + 1}`} />)}
         </div>
 
         {/* Current Position Label */}
-        <div className="mt-4 text-white/40 text-sm">
+        <div className="mt-2 sm:mt-4 text-white/40 text-xs sm:text-sm">
           {activeIndex + 1} / {teamMembers.length}
         </div>
       </main>
