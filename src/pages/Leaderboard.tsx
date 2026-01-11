@@ -7,7 +7,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
-  Bot, 
   ArrowLeft,
   Trophy,
   Medal,
@@ -15,6 +14,7 @@ import {
   Crown,
   Calendar
 } from 'lucide-react';
+import roboClubLogo from '@/assets/roboclub-logo.png';
 
 interface LeaderboardEntry {
   id: string;
@@ -148,8 +148,8 @@ export default function Leaderboard() {
             <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
-              <Bot className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 rounded-xl overflow-hidden">
+              <img src={roboClubLogo} alt="RoboClub Logo" className="w-full h-full object-cover" />
             </div>
             <span className="text-xl font-display font-bold">Leaderboard</span>
           </div>

@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Bot, ArrowLeft, Save, User, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, User, Loader2 } from 'lucide-react';
+import roboClubLogo from '@/assets/roboclub-logo.png';
 
 export default function Profile() {
   const { user, profile } = useAuth();
@@ -66,8 +67,8 @@ export default function Profile() {
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
-              <Bot className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 rounded-xl overflow-hidden">
+              <img src={roboClubLogo} alt="RoboClub Logo" className="w-full h-full object-cover" />
             </div>
             <span className="text-xl font-display font-bold">RoboClub</span>
           </div>

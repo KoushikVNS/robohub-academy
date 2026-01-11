@@ -5,12 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { 
-  Bot, 
   ArrowLeft,
   MessageSquare,
   Send,
   Users
 } from 'lucide-react';
+import roboClubLogo from '@/assets/roboclub-logo.png';
 
 export default function CommunityChat() {
   const { profile } = useAuth();
@@ -26,8 +26,8 @@ export default function CommunityChat() {
             <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
-              <Bot className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 rounded-xl overflow-hidden">
+              <img src={roboClubLogo} alt="RoboClub Logo" className="w-full h-full object-cover" />
             </div>
             <span className="text-xl font-display font-bold">Community Chat</span>
           </div>

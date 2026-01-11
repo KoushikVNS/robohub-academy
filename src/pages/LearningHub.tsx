@@ -9,7 +9,6 @@ import { Badge } from '@/components/ui/badge';
 import { QuizPlayer } from '@/components/quiz/QuizPlayer';
 import { toast } from 'sonner';
 import { 
-  Bot, 
   ArrowLeft,
   Video as VideoIcon,
   BookOpen,
@@ -17,6 +16,7 @@ import {
   Zap,
   CheckCircle2
 } from 'lucide-react';
+import roboClubLogo from '@/assets/roboclub-logo.png';
 import { format } from 'date-fns';
 
 interface Video {
@@ -191,8 +191,8 @@ export default function LearningHub() {
             <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
-              <Bot className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 rounded-xl overflow-hidden">
+              <img src={roboClubLogo} alt="RoboClub Logo" className="w-full h-full object-cover" />
             </div>
             <span className="text-xl font-display font-bold">Learning Hub</span>
           </div>
