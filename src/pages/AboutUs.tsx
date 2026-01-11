@@ -28,7 +28,7 @@ const teamMembers: TeamMember[] = [
   { id: 4, name: 'Kaushik Chakraborty', role: 'President & Mentor', image: kaushikImg, isPresident: true },
   { id: 5, name: 'Piyush Kumar', role: 'Content Creation', image: piyushImg },
   { id: 6, name: 'Soham Patel', role: 'Content Creation', image: sohamImg },
-  { id: 7, name: 'Pranjal', role: 'Developer', image: sayanImg }, // Using sayan as placeholder
+  { id: 7, name: 'Pranjal Singh', role: 'Developer', image: sayanImg }, // Using sayan as placeholder
 ];
 
 export default function AboutUs() {
