@@ -91,8 +91,8 @@ export default function Dashboard() {
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
-              <Bot className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 rounded-xl overflow-hidden">
+              <img src="/lovable-uploads/a8576855-58d4-4073-9c4c-be32c5a2ea93.png" alt="RoboClub Logo" className="w-full h-full object-cover" />
             </div>
             <span className="text-xl font-display font-bold">चिंतनCore</span>
           </div>
