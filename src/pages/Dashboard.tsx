@@ -132,6 +132,12 @@ export default function Dashboard() {
     icon: Trophy,
     color: 'bg-robot-orange/10 text-robot-orange',
     href: '/leaderboard'
+  }, {
+    title: 'About Us',
+    description: 'Meet our amazing team members',
+    icon: User,
+    color: 'bg-purple-500/10 text-purple-500',
+    href: '/about'
   }];
   return <div className="min-h-screen bg-background">
       {/* Header */}

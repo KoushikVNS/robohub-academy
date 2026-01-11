@@ -12,6 +12,7 @@ import LearningHub from "./pages/LearningHub";
 import CommunityChat from "./pages/CommunityChat";
 import LabAccess from "./pages/LabAccess";
 import Leaderboard from "./pages/Leaderboard";
+import AboutUs from "./pages/AboutUs";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -96,6 +97,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Leaderboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/about"
+        element={
+          <ProtectedRoute>
+            <AboutUs />
           </ProtectedRoute>
         }
       />
