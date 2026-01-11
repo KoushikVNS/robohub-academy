@@ -163,7 +163,15 @@ export default function Dashboard() {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl overflow-hidden">
-              <img src={roboClubLogo} alt="RoboClub Logo" className="w-full h-full object-cover" />
+              <img 
+                src={roboClubLogo} 
+                alt="RoboClub Logo" 
+                width={40}
+                height={40}
+                loading="eager"
+                decoding="async"
+                className="w-full h-full object-cover" 
+              />
             </div>
             <span className="text-xl font-display font-bold text-accent">त्रिnetraCore</span>
           </div>
