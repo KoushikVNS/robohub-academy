@@ -101,22 +101,26 @@ export default function Dashboard() {
     label: 'Videos Watched',
     value: stats.videosWatched.toString(),
     icon: Video,
-    color: 'text-primary'
+    color: 'text-primary',
+    href: '/learn?tab=videos'
   }, {
     label: 'Quizzes Completed',
     value: stats.quizzesCompleted.toString(),
     icon: BookOpen,
-    color: 'text-secondary'
+    color: 'text-secondary',
+    href: '/learn?tab=quizzes'
   }, {
     label: 'XP Points',
     value: stats.xpPoints.toString(),
     icon: Zap,
-    color: 'text-accent'
+    color: 'text-accent',
+    href: null
   }, {
     label: 'Rank',
-    value: stats.rank ? `#${stats.rank}` : '-',
+    value: stats.rank !== null ? `#${stats.rank}` : 'Unranked',
     icon: Trophy,
-    color: 'text-robot-orange'
+    color: 'text-robot-orange',
+    href: '/leaderboard'
   }];
   const features = [{
     title: 'Learning Hub',
@@ -211,7 +215,12 @@ export default function Dashboard() {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" data-tour="stats">
-          {quickStats.map(stat => <Card key={stat.label} className="border-border/50">
+          {quickStats.map(stat => (
+            <Card 
+              key={stat.label} 
+              className={`border-border/50 ${stat.href ? 'hover:border-primary/50 cursor-pointer transition-colors' : ''}`}
+              onClick={() => stat.href && navigate(stat.href)}
+            >
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-lg bg-muted flex items-center justify-center`}>
@@ -223,7 +232,8 @@ export default function Dashboard() {
                   </div>
                 </div>
               </CardContent>
-            </Card>)}
+            </Card>
+          ))}
         </div>
 
         {/* Features Grid */}
